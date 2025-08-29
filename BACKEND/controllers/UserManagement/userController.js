@@ -9,7 +9,7 @@ import {
   sendPasswordResetEmail,
   sendVerificationEmail,
   sendWelcomeEmail,
-} from "../../mailtrap/emailUser.js";
+} from "../../Email/UserManagement/emailUser.js";
 
 
 // Create User
