@@ -23,6 +23,7 @@ export const addUser = async (req, res) => {
       phoneNumber,
       address,
       password,
+      role,
       confirmPassword,
     } = req.body;
 
@@ -54,6 +55,7 @@ export const addUser = async (req, res) => {
       phoneNumber,
       address,
       password: hashed, // store hashed only
+      role,
       verificationToken,
       verificationTokenExpiresAt :Date.now()+  24*60*60*1000
     });
