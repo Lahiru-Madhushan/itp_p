@@ -38,6 +38,12 @@ const UserSchema = new Schema(
       select: false, // exclude by default in queries
     },
 
+    role: {
+			type: String,
+			enum: ["customer", "admin"],
+			default: "customer",
+		},
+
     lastLogin: { type: Date, default: Date.now },
 
     isVerified: { type: Boolean, default: false },
