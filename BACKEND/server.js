@@ -32,7 +32,8 @@ mongoose
 import userRoutes from "./routes/UserManagement/User.js";
 app.use("/user", userRoutes);
 
-
+import ProductRoutes from "./routes/productManagement/product.js";
+app.use("/product", ProductRoutes);
 
 
 
