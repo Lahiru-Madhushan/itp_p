@@ -16,9 +16,13 @@ import ForgotPassword from "./components/userManagemnt/ForgotPassword";
 import UserProfile from "./components/userManagemnt/UserProfile";
 import VerifyEmail from "./components/userManagemnt/VerifyEmail";
 import ResetPasswordPage from "./components/userManagemnt/ResetPasswordPage";
-import Footer from "./components/Footer";
+import HomePage from "./components/HomePage"
+import ContactPage from "./components/ContactPage";
+import FaqPage from "./components/FaqPage";
+import AboutUsPage from "./components/AboutUsPage";
 
 import { useAuthStore } from "./store/user";
+import { Home } from "lucide-react";
 
 // ✅ Protected Route for Admin
 const AdminRoute = ({ children }) => {
@@ -73,8 +77,12 @@ function App() {
   return (
     <Router>
       <ConditionalNavbar />
+      
+      
   
       <Routes>
+       
+        
         {/* Root Route - redirect admin automatically */}
         <Route
           path="/"
@@ -82,8 +90,8 @@ function App() {
             isAuthenticated
               ? user?.role === "admin"
                 ? <Navigate to="/admin/dashboard" replace />
-                : <div>🏠 Customer Home Page (with Navbar)</div>
-              : <div>🏠 Public Home Page</div>
+                : <HomePage />  // ✅ Customer sees HomePage
+                : <HomePage />    // ✅ Public sees HomePage
           }
         />
 
@@ -111,6 +119,11 @@ function App() {
         <Route path="/forget-password" element={<ForgotPassword />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+         <Route path="/ContactPage" element={<ContactPage />} />
+        <Route path="/FaqPage" element={<FaqPage />} />
+        <Route path="/AboutUsPage" element={<AboutUsPage />} />
+
+
 
         {/* Customer Routes */}
         <Route
