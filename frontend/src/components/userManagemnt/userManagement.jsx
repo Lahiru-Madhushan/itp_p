@@ -2,34 +2,52 @@ import React, { useEffect, useState } from "react";
 import { Search, Download, Trash2, User, Filter } from "lucide-react";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
+import { generateUsersPDF } from "./userPDF"; 
 
 const Users = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
+  const [logoUrl, setLogoUrl] = useState("");
   
+  // Load the logo from public directory
+  useEffect(() => {
+    // This path is relative to the public folder
+    setLogoUrl("/images/logo1.jpg");
+    
+    // For testing if the logo exists
+    fetch("/images/logo1.png")
+      .then(response => {
+        if (!response.ok) {
+          console.warn("Logo not found at /images/logo1.png");
+          setLogoUrl(""); // Clear if not found
+        }
+      })
+      .catch(error => {
+        console.error("Error checking logo:", error);
+        setLogoUrl(""); // Clear on error
+      });
+  }, []);
+
   // Mock data for demonstration - replace with your actual API call
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-       
-        
-        setTimeout(() => {
-          setUsers(mockData);
-          setLoading(false);
-        }, 1000);
-        
         // Replace with your actual API call:
-         const res = await fetch("http://localhost:8070/user/AllUser", {
-           credentials: "include",
-         });
+        const res = await fetch("http://localhost:8070/user/AllUser", {
+          credentials: "include",
+        });
         const data = await res.json();
         setUsers(data);
         setLoading(false);
       } catch (error) {
         console.error("Error fetching users:", error);
-        setLoading(false);
+        // Fallback to mock data if API fails
+        setTimeout(() => {
+          setUsers(mockData);
+          setLoading(false);
+        }, 1000);
       }
     };
     fetchUsers();
@@ -38,9 +56,8 @@ const Users = () => {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this user?")) return;
     try {
-      // Replace with your actual delete API call
-       await fetch(`http://localhost:8070/user/deleteUser/${id}`, {
-         method: "DELETE",
+      await fetch(`http://localhost:8070/user/deleteUser/${id}`, {
+        method: "DELETE",
         credentials: "include",
       });
       setUsers((prev) => prev.filter((u) => u._id !== id));
@@ -49,45 +66,19 @@ const Users = () => {
     }
   };
 
-  const handleDownloadPDF = () => {
-    const doc = new jsPDF();
-
-    doc.setFontSize(18);
-    doc.text("My Company Ltd.", 105, 15, { align: "center" });
-    doc.setFontSize(10);
-    doc.text("Contact: +94 123 456 789", 105, 22, { align: "center" });
-    doc.setFontSize(12);
-    doc.text("Registered Users Report", 105, 30, { align: "center" });
-
-    const tableColumn = ["First Name", "Last Name", "Address", "Phone", "Email", "Role"];
-    const tableRows = filteredUsers.map((user) => [
-      user.firstName,
-      user.lastName,
-      user.address,
-      user.phoneNumber,
-      user.email,
-      user.role,
-    ]);
-
-    doc.autoTable({
-      head: [tableColumn],
-      body: tableRows,
-      startY: 35,
-      styles: { fontSize: 10, cellPadding: 3 },
-      headStyles: { fillColor: [52, 152, 219], textColor: 255, halign: "center" },
-    });
-
-    doc.save("Users_Report.pdf");
-  };
+const handleDownloadPDF = async () => {
+  const doc = await generateUsersPDF(filteredUsers);
+  doc.save("Users_Report.pdf");
+};
 
   // Filter users based on search term and role
   const filteredUsers = users.filter((user) => {
     const matchesSearch = 
-      user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase());
+      (user.firstName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (user.lastName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (user.email || '').toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesRole = roleFilter === "all" || user.role.toLowerCase() === roleFilter.toLowerCase();
+    const matchesRole = roleFilter === "all" || (user.role || '').toLowerCase() === roleFilter.toLowerCase();
     
     return matchesSearch && matchesRole;
   });
@@ -190,7 +181,7 @@ const Users = () => {
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10">
                           <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold">
-                            {user.firstName.charAt(0)}{user.lastName.charAt(0)}
+                            {user.firstName?.charAt(0)}{user.lastName?.charAt(0)}
                           </div>
                         </div>
                         <div className="ml-4">
@@ -253,5 +244,36 @@ const Users = () => {
     </div>
   );
 };
+
+// Mock data for demonstration
+const mockData = [
+  {
+    _id: "1",
+    firstName: "John",
+    lastName: "Doe",
+    address: "123 Main St, City, Country",
+    phoneNumber: "+94 123 4567",
+    email: "john.doe@example.com",
+    role: "Admin"
+  },
+  {
+    _id: "2",
+    firstName: "Jane",
+    lastName: "Smith",
+    address: "456 Oak Ave, Town, Country",
+    phoneNumber: "+94 987 6543",
+    email: "jane.smith@example.com",
+    role: "Manager"
+  },
+  {
+    _id: "3",
+    firstName: "Robert",
+    lastName: "Johnson",
+    address: "789 Pine Rd, Village, Country",
+    phoneNumber: "+94 555 1234",
+    email: "robert.j@example.com",
+    role: "User"
+  }
+];
 
 export default Users;
