@@ -1,57 +1,77 @@
 import React, { useEffect, useState } from "react";
-import { Search, Download, Trash2, User, Filter } from "lucide-react";
-import jsPDF from "jspdf";
-import "jspdf-autotable";
-import { generateUsersPDF } from "./userPDF"; 
+import {
+  Search,
+  Download,
+  Trash2,
+  User,
+  Filter,
+  Edit,
+  X,
+} from "lucide-react";
+import { generateUsersPDF } from "./userPDF";
 
 const Users = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
-  const [logoUrl, setLogoUrl] = useState("");
-  
-  // Load the logo from public directory
-  useEffect(() => {
-    // This path is relative to the public folder
-    setLogoUrl("/images/logo1.jpg");
-    
-    // For testing if the logo exists
-    fetch("/images/logo1.png")
-      .then(response => {
-        if (!response.ok) {
-          console.warn("Logo not found at /images/logo1.png");
-          setLogoUrl(""); // Clear if not found
-        }
-      })
-      .catch(error => {
-        console.error("Error checking logo:", error);
-        setLogoUrl(""); // Clear on error
-      });
-  }, []);
+  const [editingUser, setEditingUser] = useState(null);
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    address: "",
+    phoneNumber: "",
+    role: "customer",
+    password: "",
+    confirmPassword: "",
+  });
+  const [modalOpen, setModalOpen] = useState(false);
 
-  // Mock data for demonstration - replace with your actual API call
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        // Replace with your actual API call:
         const res = await fetch("http://localhost:8070/user/AllUser", {
           credentials: "include",
         });
         const data = await res.json();
         setUsers(data);
-        setLoading(false);
       } catch (error) {
         console.error("Error fetching users:", error);
-        // Fallback to mock data if API fails
-        setTimeout(() => {
-          setUsers(mockData);
-          setLoading(false);
-        }, 1000);
+      } finally {
+        setLoading(false);
       }
     };
     fetchUsers();
   }, []);
+
+  const uniqueRoles = [...new Set(users.map((u) => u.role))];
+
+  const filteredUsers = users.filter((u) => {
+    const matchesSearch =
+      (u.firstName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (u.lastName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (u.email || "").toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRole =
+      roleFilter === "all" ||
+      (u.role || "").toLowerCase() === roleFilter.toLowerCase();
+    return matchesSearch && matchesRole;
+  });
+
+  const openEditModal = (user) => {
+    setEditingUser(user);
+    setFormData({
+      firstName: user.firstName || "",
+      lastName: user.lastName || "",
+      email: user.email || "",
+      address: user.address || "",
+      phoneNumber: user.phoneNumber || "",
+      role: user.role || "Customer",
+      password: "",
+      confirmPassword: "",
+    });
+    setModalOpen(true);
+  };
 
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this user?")) return;
@@ -66,25 +86,59 @@ const Users = () => {
     }
   };
 
-const handleDownloadPDF = async () => {
-  const doc = await generateUsersPDF(filteredUsers);
-  doc.save("Users_Report.pdf");
-};
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.firstName || !formData.lastName || !formData.email) {
+      alert("Please fill all required fields");
+      return;
+    }
+    if (formData.password !== formData.confirmPassword) {
+      alert("Passwords do not match");
+      return;
+    }
 
-  // Filter users based on search term and role
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch = 
-      (user.firstName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (user.lastName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (user.email || '').toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesRole = roleFilter === "all" || (user.role || '').toLowerCase() === roleFilter.toLowerCase();
-    
-    return matchesSearch && matchesRole;
-  });
+    try {
+      if (editingUser) {
+        const bodyData = { ...formData };
+        if (!bodyData.password) delete bodyData.password;
+        if (!bodyData.confirmPassword) delete bodyData.confirmPassword;
 
-  // Get unique roles for filter dropdown
-  const uniqueRoles = [...new Set(users.map(user => user.role))];
+        const res = await fetch(
+          `http://localhost:8070/user/updateUser/${editingUser._id}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(bodyData),
+          }
+        );
+        const updatedUser = await res.json();
+        setUsers((prev) =>
+          prev.map((u) => (u._id === updatedUser._id ? updatedUser : u))
+        );
+        alert("User updated successfully");
+      } else {
+        const res = await fetch(`http://localhost:8070/user/addUser`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(formData),
+        });
+        const newUser = await res.json();
+        setUsers((prev) => [...prev, newUser]);
+        alert("User added successfully");
+      }
+      setModalOpen(false);
+    } catch (error) {
+      console.error(error);
+      alert("Error saving user");
+    }
+  };
+
+  const handleDownloadPDF = async () => {
+    const doc = await generateUsersPDF(filteredUsers);
+    doc.save("Users_Report.pdf");
+  };
 
   if (loading) {
     return (
@@ -101,179 +155,266 @@ const handleDownloadPDF = async () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <User className="h-8 w-8 text-blue-600" />
-              <div>
-                <h1 className="text-3xl font-bold text-gray-800">User Management</h1>
-                <p className="text-gray-600">Manage and view all registered users</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-2xl font-bold text-blue-600">{filteredUsers.length}</p>
-              <p className="text-gray-600">Total Users</p>
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-6 flex justify-between items-center">
+          <div className="flex items-center space-x-3">
+            <User className="h-8 w-8 text-blue-600" />
+            <div>
+              <h1 className="text-3xl font-bold text-gray-800">
+                User Management
+              </h1>
+              <p className="text-gray-600">
+                Manage and view all registered users
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Search and Filter Controls */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-            <div className="flex flex-col sm:flex-row gap-4 flex-1">
-              {/* Search Input */}
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                <input
-                  type="text"
-                  placeholder="Search by name or email..."
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-
-              {/* Role Filter */}
-              <div className="relative">
-                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                <select
-                  className="pl-10 pr-8 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200 appearance-none bg-white min-w-[140px]"
-                  value={roleFilter}
-                  onChange={(e) => setRoleFilter(e.target.value)}
-                >
-                  <option value="all">All Roles</option>
-                  {uniqueRoles.map(role => (
-                    <option key={role} value={role}>{role}</option>
-                  ))}
-                </select>
-              </div>
+        {/* Search & Filter */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div className="flex flex-col sm:flex-row gap-4 flex-1">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+              <input
+                type="text"
+                placeholder="Search by name or email..."
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
-
-            {/* Download Button */}
-            <button
-              onClick={handleDownloadPDF}
-              className="flex items-center space-x-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
-            >
-              <Download className="h-5 w-5" />
-              <span>Download PDF</span>
-            </button>
+            <div className="relative">
+              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+              <select
+                className="pl-10 pr-8 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200 appearance-none bg-white min-w-[140px]"
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value)}
+              >
+                <option value="all">All Roles</option>
+                {uniqueRoles.map((role) => (
+                  <option key={role} value={role}>
+                    {role}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
+          <button
+            onClick={handleDownloadPDF}
+            className="flex items-center space-x-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
+          >
+            <Download className="h-5 w-5" />
+            <span>Download PDF</span>
+          </button>
         </div>
 
         {/* Users Table */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-6">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="min-w-[900px] max-w-6xl mx-auto table-auto border-collapse text-sm">
               <thead className="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
                 <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">Name</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">Address</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">Contact</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">Email</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">Role</th>
-                  <th className="px-6 py-4 text-center text-sm font-semibold uppercase tracking-wider">Actions</th>
+                  <th className="px-4 py-3 text-left font-semibold uppercase tracking-wider">
+                    Name
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold uppercase tracking-wider">
+                    Address
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold uppercase tracking-wider">
+                    Contact
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold uppercase tracking-wider">
+                    Email
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold uppercase tracking-wider">
+                    Role
+                  </th>
+                  <th className="px-4 py-3 text-center font-semibold uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filteredUsers.map((user, index) => (
-                  <tr key={user._id} className={`hover:bg-gray-50 transition-colors duration-150 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-25'}`}>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10">
-                          <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold">
-                            {user.firstName?.charAt(0)}{user.lastName?.charAt(0)}
-                          </div>
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">
-                            {user.firstName} {user.lastName}
-                          </div>
-                        </div>
+                  <tr
+                    key={user._id}
+                    className={`hover:bg-gray-50 transition-colors duration-150 ${
+                      index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                    }`}
+                  >
+                    <td className="px-4 py-3 flex items-center">
+                      <div className="flex-shrink-0 h-9 w-9 rounded-full bg-gradient-to-r from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold text-xs">
+                        {user.firstName?.charAt(0)}
+                        {user.lastName?.charAt(0)}
+                      </div>
+                      <div className="ml-3 font-medium text-gray-900">
+                        {user.firstName} {user.lastName}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">{user.address}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">{user.phoneNumber}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">{user.email}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
-                        user.role === 'Admin' 
-                          ? 'bg-purple-100 text-purple-800' 
-                          : user.role === 'Manager'
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-green-100 text-green-800'
-                      }`}>
+                    <td className="px-4 py-3">{user.address}</td>
+                    <td className="px-4 py-3">{user.phoneNumber}</td>
+                    <td className="px-4 py-3">{user.email}</td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          user.role.toLowerCase() === "admin"
+                            ? "bg-purple-100 text-purple-800"
+                            : user.role.toLowerCase() === "manager"
+                            ? "bg-blue-100 text-blue-800"
+                            : "bg-green-100 text-green-800"
+                        }`}
+                      >
                         {user.role}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-center">
+                    <td className="px-4 py-3 text-center flex justify-center gap-2">
+                      <button
+                        onClick={() => openEditModal(user)}
+                        className="inline-flex items-center px-3 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md text-xs transition"
+                      >
+                        <Edit className="h-4 w-4 mr-1" /> Edit
+                      </button>
                       <button
                         onClick={() => handleDelete(user._id)}
-                        className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-500 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-150"
+                        className="inline-flex items-center px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md text-xs transition"
                       >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Delete
+                        <Trash2 className="h-4 w-4 mr-1" /> Delete
                       </button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            {filteredUsers.length === 0 && (
+              <div className="text-center py-12 text-gray-500">
+                No users found
+              </div>
+            )}
           </div>
-          
-          {filteredUsers.length === 0 && (
-            <div className="text-center py-12">
-              <div className="text-gray-400 text-lg mb-2">No users found</div>
-              <p className="text-gray-500">Try adjusting your search or filter criteria</p>
-            </div>
-          )}
         </div>
 
-        {/* Footer Stats */}
-        <div className="mt-6 bg-white rounded-xl shadow-lg p-4">
-          <div className="text-center text-gray-600">
-            Showing {filteredUsers.length} of {users.length} users
-          </div>
+        {/* Footer */}
+        <div className="mt-6 bg-white rounded-xl shadow-lg p-4 text-center text-gray-600">
+          Showing {filteredUsers.length} of {users.length} users
         </div>
+
+        {/* Modal */}
+        {modalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 transition-opacity">
+            <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-6 relative animate-fadeIn">
+              <button
+                onClick={() => setModalOpen(false)}
+                className="absolute top-4 right-4 text-gray-600 hover:text-gray-800"
+              >
+                <X className="h-6 w-6" />
+              </button>
+              <h2 className="text-xl font-bold text-gray-800 mb-4">
+                {editingUser ? "Edit User" : "Add New User"}
+              </h2>
+              <form
+                className="grid grid-cols-1 gap-4"
+                onSubmit={handleFormSubmit}
+              >
+                <input
+                  type="text"
+                  placeholder="First Name"
+                  value={formData.firstName}
+                  onChange={(e) =>
+                    setFormData({ ...formData, firstName: e.target.value })
+                  }
+                  className="border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-yellow-400 outline-none"
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="Last Name"
+                  value={formData.lastName}
+                  onChange={(e) =>
+                    setFormData({ ...formData, lastName: e.target.value })
+                  }
+                  className="border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-yellow-400 outline-none"
+                  required
+                />
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={formData.email}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
+                  className="border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-yellow-400 outline-none"
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="Address"
+                  value={formData.address}
+                  onChange={(e) =>
+                    setFormData({ ...formData, address: e.target.value })
+                  }
+                  className="border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-yellow-400 outline-none"
+                />
+                <input
+                  type="text"
+                  placeholder="Phone Number"
+                  value={formData.phoneNumber}
+                  onChange={(e) =>
+                    setFormData({ ...formData, phoneNumber: e.target.value })
+                  }
+                  className="border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-yellow-400 outline-none"
+                />
+                <select
+                  value={formData.role}
+                  onChange={(e) =>
+                    setFormData({ ...formData, role: e.target.value })
+                  }
+                  className="border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-yellow-400 outline-none"
+                >
+                  <option value="Admin">Admin</option>
+                  <option value="Customer">Customer</option>
+                </select>
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={formData.password}
+                  onChange={(e) =>
+                    setFormData({ ...formData, password: e.target.value })
+                  }
+                  className="border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-yellow-400 outline-none"
+                />
+                <input
+                  type="password"
+                  placeholder="Confirm Password"
+                  value={formData.confirmPassword}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      confirmPassword: e.target.value,
+                    })
+                  }
+                  className="border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-yellow-400 outline-none"
+                />
+                <div className="flex justify-end gap-4 mt-2">
+                  <button
+                    type="submit"
+                    className="bg-yellow-400 hover:bg-yellow-500 text-gray-800 px-6 py-2 rounded-lg font-medium transition"
+                  >
+                    {editingUser ? "Update" : "Save"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setModalOpen(false)}
+                    className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-2 rounded-lg font-medium transition"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 };
-
-// Mock data for demonstration
-const mockData = [
-  {
-    _id: "1",
-    firstName: "John",
-    lastName: "Doe",
-    address: "123 Main St, City, Country",
-    phoneNumber: "+94 123 4567",
-    email: "john.doe@example.com",
-    role: "Admin"
-  },
-  {
-    _id: "2",
-    firstName: "Jane",
-    lastName: "Smith",
-    address: "456 Oak Ave, Town, Country",
-    phoneNumber: "+94 987 6543",
-    email: "jane.smith@example.com",
-    role: "Manager"
-  },
-  {
-    _id: "3",
-    firstName: "Robert",
-    lastName: "Johnson",
-    address: "789 Pine Rd, Village, Country",
-    phoneNumber: "+94 555 1234",
-    email: "robert.j@example.com",
-    role: "User"
-  }
-];
 
 export default Users;

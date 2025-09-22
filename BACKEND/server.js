@@ -33,4 +33,9 @@ app.use("/user", userRoutes);
 import ProductRoutes from "./routes/productManagement/product.js";
 app.use("/product", ProductRoutes);
 
+//customization
+import customizationRoutes from "./routes/ClothingCustomization/customization.js";
+app.use("/customization", customizationRoutes);
+
+
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
