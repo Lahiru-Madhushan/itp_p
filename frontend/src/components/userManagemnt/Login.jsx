@@ -10,12 +10,29 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const closeToHome = () => navigate("/");
   const stop = (e) => e.stopPropagation();
 
+  const validate = () => {
+    let tempErrors = {};
+    if (!email.trim()) tempErrors.email = "Email is required";
+    else if (!/^\S+@\S+\.\S+$/.test(email))
+      tempErrors.email = "Enter a valid email";
+
+    if (!password.trim()) tempErrors.password = "Password is required";
+    else if (password.length < 8)
+      tempErrors.password = "Password must be at least 8 characters";
+
+    setErrors(tempErrors);
+    return Object.keys(tempErrors).length === 0;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validate()) return;
+
     try {
       await login(email, password);
       if (user?.role === "admin") navigate("/admin-Dashboard");
@@ -27,15 +44,27 @@ const Login = () => {
 
   return (
     <div className="fixed inset-0 flex z-50" onClick={closeToHome}>
-      {/* Left shaded overlay */}
-      <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-b from-black/40 via-black/20 to-black/10">
-        <div className="absolute inset-0 bg-black bg-opacity-40"></div>
+      {/* Left Image + Dark Overlay */}
+      <div className="hidden lg:flex lg:w-3/5 relative">
+        <img
+          src="/images/bckg.jpg"
+          alt="fashion background"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black via-black/90 to-black/80 opacity-90"></div>
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-white text-center p-8">
+          <h1 className="text-4xl font-bold mb-4">Welcome Back!</h1>
+          <p className="max-w-md text-gray-300">
+            Log in to your account and continue exploring the latest fashion
+            trends with a seamless experience.
+          </p>
+        </div>
       </div>
 
       {/* Right Login Form */}
       <aside
         onClick={stop}
-        className="w-full lg:w-1/2 bg-white flex flex-col relative overflow-y-auto p-8"
+        className="w-full lg:w-2/5 bg-white flex flex-col relative overflow-y-auto p-6 sm:p-8 shadow-2xl"
       >
         {/* Close Button */}
         <button
@@ -46,13 +75,15 @@ const Login = () => {
         </button>
 
         <div className="flex-1 flex items-center justify-center">
-          <div className="w-full max-w-md">
-            <h2 className="text-3xl font-bold text-gray-800 text-center mb-2">Hello There!</h2>
+          <div className="w-full max-w-md bg-white p-6 rounded-xl shadow-md">
+            <h2 className="text-2xl font-bold text-gray-800 text-center mb-2">
+              Welcome Back
+            </h2>
             <p className="text-center text-gray-600 mb-6">
-              Welcome 😊 you’ve been missed. Please enter your data to log in.
+              Please enter your credentials to continue.
             </p>
 
-            {/* Error message */}
+            {/* API error */}
             {error && (
               <div className="bg-red-50 border-l-4 border-red-500 p-3 rounded mb-3 text-red-700 text-sm">
                 {error}
@@ -62,38 +93,50 @@ const Login = () => {
             <form className="space-y-4" onSubmit={handleSubmit}>
               {/* Email */}
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
                 <input
                   type="email"
                   placeholder="Email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  required
                   autoComplete="email"
-                  className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:border-yellow-400 focus:outline-none transition-all duration-200"
+                  className={`w-full pl-10 pr-4 py-2.5 border-2 rounded-lg focus:outline-none transition-all duration-200 ${
+                    errors.email
+                      ? "border-red-400 focus:border-red-500"
+                      : "border-gray-200 focus:border-yellow-400"
+                  }`}
                 />
               </div>
+              {errors.email && (
+                <p className="text-xs text-red-500 mt-1">{errors.email}</p>
+              )}
 
               {/* Password */}
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
                 <input
                   type={showPassword ? "text" : "password"}
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  required
                   autoComplete="current-password"
-                  className="w-full pl-10 pr-12 py-3 border-2 border-gray-200 rounded-lg focus:border-yellow-400 focus:outline-none transition-all duration-200"
+                  className={`w-full pl-10 pr-12 py-2.5 border-2 rounded-lg focus:outline-none transition-all duration-200 ${
+                    errors.password
+                      ? "border-red-400 focus:border-red-500"
+                      : "border-gray-200 focus:border-yellow-400"
+                  }`}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
+              {errors.password && (
+                <p className="text-xs text-red-500 mt-1">{errors.password}</p>
+              )}
 
               <div className="text-right">
                 <button
