@@ -9,26 +9,30 @@ import {
   getCustomizationById,
   updateCustomizationStatus,
   deleteCustomization,
+  getCustomizationsByUser,
+  cancelCustomization,
+  updateCustomization ,
 } from "../../controllers/ClothingCustomization/customizationController.js";
 
 const router = express.Router();
 
-// Multer storage for images
+// Multer storage setup
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/customizations/");
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + "-" + file.originalname);
-  },
+  destination: (req, file, cb) => cb(null, "uploads/customizations/"),
+  filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
 });
 const upload = multer({ storage });
 
-// routes
+// ✅ Customer routes
 router.post("/add", verifyToken, upload.single("designImage"), addCustomization);
+router.get("/user/:userId", verifyToken, getCustomizationsByUser); // fetch my customizations
+router.delete("/:id", verifyToken, cancelCustomization); // cancel (if Pending)
+router.put("/:id", verifyToken, updateCustomization);
+
+// ✅ Admin routes
 router.get("/all", verifyToken, getAllCustomizations);
 router.get("/:id", verifyToken, getCustomizationById);
 router.put("/status/:id", verifyToken, updateCustomizationStatus);
-router.delete("/:id", verifyToken, deleteCustomization);
+router.delete("/admin/:id", verifyToken, deleteCustomization); // full delete (admin only)
 
 export default router;

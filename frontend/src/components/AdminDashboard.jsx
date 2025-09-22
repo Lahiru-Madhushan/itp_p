@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import UserManagement from "./userManagemnt/userManagement";
+import Customization from "./customization/CustomizationAdmin"
 import { useAuthStore } from "../store/user";
 
 const AdminDashboard = () => {
@@ -113,10 +114,10 @@ const AdminDashboard = () => {
         <Routes>
           <Route index element={<div>📊 Admin Dashboard Home</div>} />
           <Route path="All-user" element={<UserManagement />} />
-          <Route path="payment" element={<div>💳 Payment Management</div>} />
+          <Route path="payment" element={<Customization />} />
           <Route path="feedback" element={<div>💬 Reviews Management</div>} />
           <Route path="products" element={<div>📦 Product Management</div>} />
-          <Route path="settings" element={<div>⚙️ Customization Management</div>} />
+          <Route path="settings" element={<Customization />} />
           <Route path="inventory" element={<div>📦 Inventory Management</div>} /> {/* Added */}
         </Routes>
       </div>

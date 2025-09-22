@@ -21,7 +21,7 @@ import HomePage from "./components/HomePage"
 import ContactPage from "./components/ContactPage";
 import FaqPage from "./components/FaqPage";
 import AboutUsPage from "./components/AboutUsPage";
-
+import CustomizationForm from "./components/customization/CustomizationForm";
 
 import { useAuthStore } from "./store/user";
 import { Home } from "lucide-react";
@@ -124,7 +124,7 @@ function App() {
          <Route path="/ContactPage" element={<ContactPage />} />
         <Route path="/FaqPage" element={<FaqPage />} />
         <Route path="/AboutUsPage" element={<AboutUsPage />} />
-
+        <Route path="/customize" element={<CustomizationForm />} />
 
 
         {/* Customer Routes */}
