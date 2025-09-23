@@ -15,6 +15,8 @@ const Users = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
+  const [yearFilter, setYearFilter] = useState("all");
+  const [monthFilter, setMonthFilter] = useState("all");
   const [editingUser, setEditingUser] = useState(null);
   const [formData, setFormData] = useState({
     firstName: "",
@@ -45,17 +47,37 @@ const Users = () => {
     fetchUsers();
   }, []);
 
+  // Unique roles and years for dropdowns
   const uniqueRoles = [...new Set(users.map((u) => u.role))];
+  const uniqueYears = [
+    ...new Set(
+      users
+        .filter((u) => u.createdAt)
+        .map((u) => new Date(u.createdAt).getFullYear())
+    ),
+  ];
 
+  // Filtering logic
   const filteredUsers = users.filter((u) => {
     const matchesSearch =
       (u.firstName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       (u.lastName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       (u.email || "").toLowerCase().includes(searchTerm.toLowerCase());
+
     const matchesRole =
       roleFilter === "all" ||
       (u.role || "").toLowerCase() === roleFilter.toLowerCase();
-    return matchesSearch && matchesRole;
+
+    const createdAt = u.createdAt ? new Date(u.createdAt) : null;
+    const matchesYear =
+      yearFilter === "all" ||
+      (createdAt && createdAt.getFullYear().toString() === yearFilter);
+
+    const matchesMonth =
+      monthFilter === "all" ||
+      (createdAt && (createdAt.getMonth() + 1).toString() === monthFilter);
+
+    return matchesSearch && matchesRole && matchesYear && matchesMonth;
   });
 
   const openEditModal = (user) => {
@@ -169,9 +191,10 @@ const Users = () => {
           </div>
         </div>
 
-        {/* Search & Filter */}
+        {/* Search & Filters */}
         <div className="bg-white rounded-xl shadow-lg p-6 mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div className="flex flex-col sm:flex-row gap-4 flex-1">
+          <div className="flex flex-col sm:flex-row gap-4 flex-1 flex-wrap">
+            {/* Search */}
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
               <input
@@ -182,10 +205,12 @@ const Users = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
+
+            {/* Role Filter */}
             <div className="relative">
               <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
               <select
-                className="pl-10 pr-8 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200 appearance-none bg-white min-w-[140px]"
+                className="pl-10 pr-8 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value)}
               >
@@ -197,7 +222,48 @@ const Users = () => {
                 ))}
               </select>
             </div>
+
+            {/* Year Filter */}
+            <div className="relative">
+              <select
+                className="pl-3 pr-8 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
+                value={yearFilter}
+                onChange={(e) => setYearFilter(e.target.value)}
+              >
+                <option value="all">All Years</option>
+                {uniqueYears.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Month Filter */}
+            <div className="relative">
+              <select
+                className="pl-3 pr-8 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
+                value={monthFilter}
+                onChange={(e) => setMonthFilter(e.target.value)}
+              >
+                <option value="all">All Months</option>
+                <option value="1">January</option>
+                <option value="2">February</option>
+                <option value="3">March</option>
+                <option value="4">April</option>
+                <option value="5">May</option>
+                <option value="6">June</option>
+                <option value="7">July</option>
+                <option value="8">August</option>
+                <option value="9">September</option>
+                <option value="10">October</option>
+                <option value="11">November</option>
+                <option value="12">December</option>
+              </select>
+            </div>
           </div>
+
+          {/* Download PDF Button */}
           <button
             onClick={handleDownloadPDF}
             className="flex items-center space-x-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
@@ -227,6 +293,9 @@ const Users = () => {
                   </th>
                   <th className="px-4 py-3 text-left font-semibold uppercase tracking-wider">
                     Role
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold uppercase tracking-wider">
+                    Created At
                   </th>
                   <th className="px-4 py-3 text-center font-semibold uppercase tracking-wider">
                     Actions
@@ -266,6 +335,11 @@ const Users = () => {
                         {user.role}
                       </span>
                     </td>
+                    <td className="px-4 py-3">
+                      {user.createdAt
+                        ? new Date(user.createdAt).toLocaleDateString()
+                        : "N/A"}
+                    </td>
                     <td className="px-4 py-3 text-center flex justify-center gap-2">
                       <button
                         onClick={() => openEditModal(user)}
@@ -285,9 +359,7 @@ const Users = () => {
               </tbody>
             </table>
             {filteredUsers.length === 0 && (
-              <div className="text-center py-12 text-gray-500">
-                No users found
-              </div>
+              <div className="text-center py-12 text-gray-500">No users found</div>
             )}
           </div>
         </div>
@@ -310,10 +382,7 @@ const Users = () => {
               <h2 className="text-xl font-bold text-gray-800 mb-4">
                 {editingUser ? "Edit User" : "Add New User"}
               </h2>
-              <form
-                className="grid grid-cols-1 gap-4"
-                onSubmit={handleFormSubmit}
-              >
+              <form className="grid grid-cols-1 gap-4" onSubmit={handleFormSubmit}>
                 <input
                   type="text"
                   placeholder="First Name"

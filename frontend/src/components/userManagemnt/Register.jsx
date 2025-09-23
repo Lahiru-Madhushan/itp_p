@@ -42,6 +42,16 @@ const Register = () => {
     validateField(name, value);
   };
 
+  // Prevent invalid characters while typing
+  const handleKeyPress = (e, type) => {
+    if (type === "name") {
+      if (!/^[a-zA-Z\s]*$/.test(e.key)) e.preventDefault();
+    }
+    if (type === "phone") {
+      if (!/[0-9]/.test(e.key)) e.preventDefault();
+    }
+  };
+
   const checkPasswordStrength = (password) => {
     let strength = 0;
     if (password.length >= 8) strength += 25;
@@ -63,10 +73,10 @@ const Register = () => {
 
     switch (name) {
       case "firstName":
-        if (!value.trim()) message = "First name is required";
-        break;
       case "lastName":
-        if (!value.trim()) message = "Last name is required";
+        if (!value.trim())
+          message = `${name === "firstName" ? "First" : "Last"} name is required`;
+        else if (!/^[A-Za-z\s]+$/.test(value)) message = "Only letters allowed";
         break;
       case "email":
         if (!value.trim()) message = "Email is required";
@@ -180,11 +190,12 @@ const Register = () => {
                       name="firstName"
                       value={formData.firstName}
                       onChange={handleInputChange}
+                      onKeyPress={(e) => handleKeyPress(e, "name")}
                       placeholder="First Name"
-                      className={`w-full pl-10 pr-4 py-2.5 border-2 rounded-lg focus:outline-none transition-all duration-200 ${
+                      className={`w-full pl-10 pr-4 py-2.5 border-2 rounded-lg ${
                         errors.firstName
-                          ? "border-red-400 focus:border-red-500"
-                          : "border-gray-200 focus:border-yellow-400"
+                          ? "border-red-400"
+                          : "border-gray-200"
                       }`}
                     />
                   </div>
@@ -204,11 +215,12 @@ const Register = () => {
                       name="lastName"
                       value={formData.lastName}
                       onChange={handleInputChange}
+                      onKeyPress={(e) => handleKeyPress(e, "name")}
                       placeholder="Last Name"
-                      className={`w-full pl-10 pr-4 py-2.5 border-2 rounded-lg focus:outline-none transition-all duration-200 ${
+                      className={`w-full pl-10 pr-4 py-2.5 border-2 rounded-lg ${
                         errors.lastName
-                          ? "border-red-400 focus:border-red-500"
-                          : "border-gray-200 focus:border-yellow-400"
+                          ? "border-red-400"
+                          : "border-gray-200"
                       }`}
                     />
                   </div>
@@ -230,10 +242,8 @@ const Register = () => {
                     value={formData.email}
                     onChange={handleInputChange}
                     placeholder="Email Address"
-                    className={`w-full pl-10 pr-4 py-2.5 border-2 rounded-lg focus:outline-none transition-all duration-200 ${
-                      errors.email
-                        ? "border-red-400 focus:border-red-500"
-                        : "border-gray-200 focus:border-yellow-400"
+                    className={`w-full pl-10 pr-4 py-2.5 border-2 rounded-lg ${
+                      errors.email ? "border-red-400" : "border-gray-200"
                     }`}
                   />
                 </div>
@@ -251,11 +261,11 @@ const Register = () => {
                     name="contact"
                     value={formData.contact}
                     onChange={handleInputChange}
+                    onKeyPress={(e) => handleKeyPress(e, "phone")}
+                    maxLength={10}
                     placeholder="Phone Number"
-                    className={`w-full pl-10 pr-4 py-2.5 border-2 rounded-lg focus:outline-none transition-all duration-200 ${
-                      errors.contact
-                        ? "border-red-400 focus:border-red-500"
-                        : "border-gray-200 focus:border-yellow-400"
+                    className={`w-full pl-10 pr-4 py-2.5 border-2 rounded-lg ${
+                      errors.contact ? "border-red-400" : "border-gray-200"
                     }`}
                   />
                 </div>
@@ -274,10 +284,8 @@ const Register = () => {
                     value={formData.address}
                     onChange={handleInputChange}
                     placeholder="Address"
-                    className={`w-full pl-10 pr-4 py-2.5 border-2 rounded-lg focus:outline-none transition-all duration-200 ${
-                      errors.address
-                        ? "border-red-400 focus:border-red-500"
-                        : "border-gray-200 focus:border-yellow-400"
+                    className={`w-full pl-10 pr-4 py-2.5 border-2 rounded-lg ${
+                      errors.address ? "border-red-400" : "border-gray-200"
                     }`}
                   />
                 </div>
@@ -296,10 +304,8 @@ const Register = () => {
                     value={formData.password}
                     onChange={handleInputChange}
                     placeholder="Password"
-                    className={`w-full pl-10 pr-12 py-2.5 border-2 rounded-lg focus:outline-none transition-all duration-200 ${
-                      errors.password
-                        ? "border-red-400 focus:border-red-500"
-                        : "border-gray-200 focus:border-yellow-400"
+                    className={`w-full pl-10 pr-12 py-2.5 border-2 rounded-lg ${
+                      errors.password ? "border-red-400" : "border-gray-200"
                     }`}
                   />
                   <button
@@ -354,10 +360,10 @@ const Register = () => {
                     value={formData.confirmPassword}
                     onChange={handleInputChange}
                     placeholder="Confirm Password"
-                    className={`w-full pl-10 pr-12 py-2.5 border-2 rounded-lg focus:outline-none transition-all duration-200 ${
+                    className={`w-full pl-10 pr-12 py-2.5 border-2 rounded-lg ${
                       errors.confirmPassword
-                        ? "border-red-400 focus:border-red-500"
-                        : "border-gray-200 focus:border-yellow-400"
+                        ? "border-red-400"
+                        : "border-gray-200"
                     }`}
                   />
                   <button
