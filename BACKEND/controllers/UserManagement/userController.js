@@ -127,8 +127,9 @@ export const updateUser = async (req, res) => {
       email,
       phoneNumber,
       address,
-      password,          // optional
-      confirmPassword,   // optional, only used if password provided
+      role,
+      password,       
+      confirmPassword,   
     } = req.body;
 
     const updateData = {
@@ -138,6 +139,7 @@ export const updateUser = async (req, res) => {
       email,
       phoneNumber,
       address,
+      role,
     };
 
     // If password fields are provided, validate + hash

@@ -88,7 +88,7 @@ const Users = () => {
       email: user.email || "",
       address: user.address || "",
       phoneNumber: user.phoneNumber || "",
-      role: user.role || "Customer",
+      role: user.role?.toLowerCase() || "customer", // ensure lowercase
       password: "",
       confirmPassword: "",
     });
@@ -124,6 +124,11 @@ const Users = () => {
         const bodyData = { ...formData };
         if (!bodyData.password) delete bodyData.password;
         if (!bodyData.confirmPassword) delete bodyData.confirmPassword;
+
+        // normalize role
+        if (bodyData.role) {
+          bodyData.role = bodyData.role.toLowerCase();
+        }
 
         const res = await fetch(
           `http://localhost:8070/user/updateUser/${editingUser._id}`,
@@ -327,12 +332,11 @@ const Users = () => {
                         className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                           user.role.toLowerCase() === "admin"
                             ? "bg-purple-100 text-purple-800"
-                            : user.role.toLowerCase() === "manager"
-                            ? "bg-blue-100 text-blue-800"
                             : "bg-green-100 text-green-800"
                         }`}
                       >
-                        {user.role}
+                        {user.role.charAt(0).toUpperCase() +
+                          user.role.slice(1)}
                       </span>
                     </td>
                     <td className="px-4 py-3">
@@ -359,7 +363,9 @@ const Users = () => {
               </tbody>
             </table>
             {filteredUsers.length === 0 && (
-              <div className="text-center py-12 text-gray-500">No users found</div>
+              <div className="text-center py-12 text-gray-500">
+                No users found
+              </div>
             )}
           </div>
         </div>
@@ -438,8 +444,8 @@ const Users = () => {
                   }
                   className="border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-yellow-400 outline-none"
                 >
-                  <option value="Admin">Admin</option>
-                  <option value="Customer">Customer</option>
+                  <option value="admin">Admin</option>
+                  <option value="customer">Customer</option>
                 </select>
                 <input
                   type="password"

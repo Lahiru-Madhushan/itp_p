@@ -1,14 +1,20 @@
+// src/components/NavigationBar.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { ShoppingCart, User, Menu, X, Zap, Shield, Truck } from "lucide-react";
 import { useAuthStore } from "../store/user";
+import CartDropdown from "./productManagement/CartDropdown";
 
 const NavigationBar = () => {
   const { isAuthenticated, user, logout } = useAuthStore();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [cartCount, setCartCount] = useState(0);
+
+  // Cart state (NEW)
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [cart, setCart] = useState([]);
+  const cartRef = useRef(null);
 
   const profileRef = useRef(null);
   const menuRef = useRef(null);
@@ -19,29 +25,61 @@ const NavigationBar = () => {
 
   const navigationItems = [
     { name: "Home", href: "/" },
-    { name: "Mensware", href: "/mensware" },
-    { name: "Femaleware", href: "/femaleware" },
-    { name: "Kidsware", href: "/kidsware" },
+    { name: "Mensware", href: "/Mensware" },
+    { name: "Femaleware", href: "/FemaleWarePage" },
+    { name: "Kidsware", href: "/KidswarePage" },
     { name: "Customize Clothes", href: "/customize", special: true },
-    { name: "Reviews", href: "/reviews" }, // ✅ Added Reviews tab
+    { name: "Reviews", href: "/reviews" },
   ];
 
-  // Scroll effect
+  // Scroll effect (unchanged)
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Close dropdowns on outside click
+  // Close dropdowns on outside click (unchanged + cart)
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (profileRef.current && !profileRef.current.contains(e.target)) setIsProfileOpen(false);
       if (menuRef.current && !menuRef.current.contains(e.target)) setIsMenuOpen(false);
+      if (cartRef.current && !cartRef.current.contains(e.target)) setIsCartOpen(false);
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Load & sync cart from localStorage
+  useEffect(() => {
+    const loadCart = () => {
+      const savedCart = JSON.parse(localStorage.getItem("cart")) || [];
+      setCart(savedCart);
+    };
+    loadCart();
+    // NOTE: native 'storage' only fires across tabs; we also trigger it manually in app after cart changes.
+    window.addEventListener("storage", loadCart);
+    return () => window.removeEventListener("storage", loadCart);
+  }, []);
+
+  // Remove item: call backend to restore stock, then update localStorage
+  const handleRemoveItem = async (id, qty = 1) => {
+    try {
+      await fetch("http://localhost:8070/product/removeFromCart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId: id, quantity: qty }),
+      });
+
+      const updated = cart.filter((item) => item._id !== id);
+      setCart(updated);
+      localStorage.setItem("cart", JSON.stringify(updated));
+      // notify any listeners (same-tab)
+      window.dispatchEvent(new Event("storage"));
+    } catch (err) {
+      console.error("Error removing from cart:", err);
+    }
+  };
 
   return (
     <div className="w-full">
@@ -103,20 +141,26 @@ const NavigationBar = () => {
 
             {/* Right Icons */}
             <div className="flex items-center space-x-3">
-              {/* Cart */}
-              <Link
-                to="/cart"
-                className={iconHoverClass}
-              >
-                <ShoppingCart className="h-6 w-6" />
-                {cartCount > 0 && (
-                  <div className="absolute -top-1 -right-1 bg-gradient-to-r from-yellow-400 to-yellow-500 text-black text-xs rounded-full h-6 w-6 flex items-center justify-center font-black shadow-lg animate-bounce">
-                    {cartCount}
-                  </div>
-                )}
-              </Link>
+              {/* Cart (appearance unchanged; now opens dropdown) */}
+              <div className="relative" ref={cartRef}>
+                <button
+                  onClick={() => setIsCartOpen(!isCartOpen)}
+                  className={iconHoverClass}
+                >
+                  <ShoppingCart className="h-6 w-6" />
+                  {cart.length > 0 && (
+                    <div className="absolute -top-1 -right-1 bg-gradient-to-r from-yellow-400 to-yellow-500 text-black text-xs rounded-full h-6 w-6 flex items-center justify-center font-black shadow-lg animate-bounce">
+                      {cart.length}
+                    </div>
+                  )}
+                </button>
 
-              {/* Profile Dropdown */}
+                {isCartOpen && (
+                  <CartDropdown cart={cart} onRemove={handleRemoveItem} />
+                )}
+              </div>
+
+              {/* Profile (unchanged) */}
               <div className="relative" ref={profileRef}>
                 {isAuthenticated ? (
                   <button
@@ -128,7 +172,7 @@ const NavigationBar = () => {
                 ) : (
                   <Link
                     to="/register"
-                    className={iconHoverClass}  // same animation as cart
+                    className={iconHoverClass}
                   >
                     <User className="h-6 w-6" />
                   </Link>
@@ -184,7 +228,7 @@ const NavigationBar = () => {
                 )}
               </div>
 
-              {/* Mobile Menu Button */}
+              {/* Mobile Menu Button (unchanged) */}
               <div className="lg:hidden" ref={menuRef}>
                 <button
                   onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -197,7 +241,7 @@ const NavigationBar = () => {
           </div>
         </div>
 
-        {/* Mobile Menu */}
+        {/* Mobile Menu (unchanged) */}
         {isMenuOpen && (
           <div className="lg:hidden bg-gradient-to-br from-white via-yellow-50 to-white border-t-2 border-yellow-200 shadow-2xl">
             <div className="px-4 pt-4 pb-6 space-y-3 sm:px-6">
@@ -216,7 +260,7 @@ const NavigationBar = () => {
         )}
       </nav>
 
-      {/* Secondary Info Bar */}
+      {/* Secondary Info Bar (unchanged) */}
       <div className="bg-gradient-to-r from-yellow-100 via-yellow-50 to-yellow-100 border-b border-yellow-200 py-3 px-4">
         <div className="max-w-7xl mx-auto flex items-center justify-center space-x-12 text-sm font-semibold text-gray-700">
           <div className="flex items-center space-x-2 group cursor-pointer hover:scale-105 transition-transform duration-300">
