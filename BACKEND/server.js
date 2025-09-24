@@ -48,5 +48,9 @@ app.use("/product", ProductRoutes);
 import customizationRoutes from "./routes/ClothingCustomization/customization.js";
 app.use("/customization", customizationRoutes);
 
+import rawRoutes from "./routes/RawManagement/raw.js";
+app.use("/raw", rawRoutes);
+
+
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

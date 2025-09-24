@@ -15,6 +15,7 @@ import {
 
 import UserManagement from "./userManagemnt/userManagement";
 import Customization from "./customization/CustomizationAdmin"
+import Rawmaterial from "./Raw/readRaw"
 import { useAuthStore } from "../store/user";
 
 const AdminDashboard = () => {
@@ -118,7 +119,7 @@ const AdminDashboard = () => {
           <Route path="feedback" element={<div>💬 Reviews Management</div>} />
           <Route path="products" element={<div>📦 Product Management</div>} />
           <Route path="settings" element={<Customization />} />
-          <Route path="inventory" element={<div>📦 Inventory Management</div>} /> {/* Added */}
+          <Route path="inventory" element={<Rawmaterial />} /> 
         </Routes>
       </div>
     </div>

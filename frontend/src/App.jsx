@@ -23,6 +23,8 @@ import FaqPage from "./components/FaqPage";
 import AboutUsPage from "./components/AboutUsPage";
 import CustomizationForm from "./components/customization/CustomizationForm";
 
+import ReadRaw from "./components/Raw/readRaw"
+
 import { useAuthStore } from "./store/user";
 import { Home } from "lucide-react";
 
@@ -94,7 +96,7 @@ function App() {
                 ? <Navigate to="/admin/dashboard" replace />
                 : <HomePage />  // ✅ Customer sees HomePage
                 : <HomePage />    // ✅ Public sees HomePage
-          }
+          }      
         />
 
         {/* Public Routes */}
@@ -125,7 +127,7 @@ function App() {
         <Route path="/FaqPage" element={<FaqPage />} />
         <Route path="/AboutUsPage" element={<AboutUsPage />} />
         <Route path="/customize" element={<CustomizationForm />} />
-
+        
 
         {/* Customer Routes */}
         <Route
