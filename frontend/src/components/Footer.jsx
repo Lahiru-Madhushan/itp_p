@@ -33,7 +33,7 @@ const Footer = () => {
         <div className="footer-links flex flex-wrap justify-center gap-6 mb-6">
           <a href="/AboutUsPage" className="hover:text-yellow-400 transition-colors duration-300">About Us</a>
           <a href="#" className="hover:text-yellow-400 transition-colors duration-300">Ready-Made</a>
-          <a href="#" className="hover:text-yellow-400 transition-colors duration-300">Custom Orders</a>
+          <a href="/customize" className="hover:text-yellow-400 transition-colors duration-300">Custom Orders</a>
           <a href="/files/Yong_Smart_size_chart.pdf" download className="hover:text-yellow-400 transition-colors duration-300">Size Guide</a>
           <a href="/ContactPage" className="hover:text-yellow-400 transition-colors duration-300">Contact</a>
           <a href="/FaqPage" className="hover:text-yellow-400 transition-colors duration-300">FAQ</a>
