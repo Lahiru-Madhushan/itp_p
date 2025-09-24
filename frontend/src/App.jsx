@@ -23,7 +23,10 @@ import FaqPage from "./components/FaqPage";
 import AboutUsPage from "./components/AboutUsPage";
 import CustomizationForm from "./components/customization/CustomizationForm";
 
-import ReadRaw from "./components/Raw/readRaw"
+
+import Mensware from "./components/productManagement/Mensware";
+import FemaleWarePage from "./components/productManagement/FemaleWarePage";
+import KidswarePage from "./components/productManagement/KidswarePage";
 
 import { useAuthStore } from "./store/user";
 import { Home } from "lucide-react";
@@ -127,7 +130,12 @@ function App() {
         <Route path="/FaqPage" element={<FaqPage />} />
         <Route path="/AboutUsPage" element={<AboutUsPage />} />
         <Route path="/customize" element={<CustomizationForm />} />
-        
+         <Route path="/Mensware" element={<Mensware />} />
+          <Route path="/FemaleWarePage" element={<FemaleWarePage />} />
+           <Route path="/KidswarePage" element={<KidswarePage />} />
+
+
+         
 
         {/* Customer Routes */}
         <Route
