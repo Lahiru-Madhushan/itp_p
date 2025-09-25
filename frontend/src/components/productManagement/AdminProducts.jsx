@@ -1,5 +1,7 @@
+// AdminProducts.js
 import React, { useEffect, useState } from "react";
-import { Search, Trash2, Edit, Plus, X, Package } from "lucide-react";
+import { Search, Trash2, Edit, Plus, X, Package, Download } from "lucide-react";
+import { generateProductsPDF } from "./productPDF"; // <-- Import PDF generator
 
 export default function AdminProducts() {
   const [products, setProducts] = useState([]);
@@ -105,7 +107,6 @@ export default function AdminProducts() {
 
       if (!res.ok) throw new Error(result.message || "Failed to save");
 
-      // ✅ Handle backend response shape (result OR result.product)
       const savedProduct = result.product || result;
 
       if (editingProduct) {
@@ -116,7 +117,6 @@ export default function AdminProducts() {
         setProducts((prev) => [...prev, savedProduct]);
       }
 
-      // ✅ Reset
       setModalOpen(false);
       setEditingProduct(null);
       setFormData({
@@ -150,6 +150,12 @@ export default function AdminProducts() {
     }
   };
 
+  // ✅ Download PDF
+  const handleDownloadPDF = async () => {
+    const doc = await generateProductsPDF(filtered);
+    doc.save("Products_Report.pdf");
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
@@ -172,17 +178,26 @@ export default function AdminProducts() {
               <h1 className="text-3xl font-bold text-gray-800">
                 Product Management
               </h1>
-              <p className="text-gray-600">
-                Manage and view all store products
-              </p>
+              <p className="text-gray-600">Manage and view all store products</p>
             </div>
           </div>
-          <button
-            onClick={() => openModal()}
-            className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2"
-          >
-            <Plus className="h-5 w-5" /> Add Product
-          </button>
+          <div className="flex gap-3">
+            {/* Add Product Button */}
+            <button
+              onClick={() => openModal()}
+              className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2"
+            >
+              <Plus className="h-5 w-5" /> Add Product
+            </button>
+            {/* Download PDF Button */}
+            <button
+              onClick={handleDownloadPDF}
+              className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
+            >
+              <Download className="h-5 w-5" />
+              Download PDF
+            </button>
+          </div>
         </div>
 
         {/* Search & Filters */}
