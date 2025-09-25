@@ -3,7 +3,7 @@ import Product from "../../models/productManagement/Product.js";
 // Create Product
 export const addProduct = async (req, res) => {
   try {
-    const { name, category, price, description, stockQuantity } = req.body;
+    const { name, category, price, description, stockQuantity, size } = req.body;
 
     if (!name || !category || !price || !stockQuantity || !size) {
       throw new Error("Name, category, price, and stockQuantity are required");
