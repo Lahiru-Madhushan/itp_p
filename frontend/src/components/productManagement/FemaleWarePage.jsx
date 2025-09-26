@@ -325,12 +325,12 @@ export default function FemaleWarePage() {
                   }}
                   className="cursor-pointer group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 overflow-hidden border border-gray-100 hover:border-pink-300"
                 >
-                  <div className="relative bg-gray-50 h-64">
+                  <div className="relative bg-gray-50 h-64 flex items-center justify-center">
                     {product.images?.length > 0 ? (
                       <img
                         src={`http://localhost:8070${product.images[currentIndex]}`}
                         alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
                       />
                     ) : (
                       <div className="h-full flex items-center justify-center text-gray-400 bg-gray-100">
@@ -406,15 +406,15 @@ export default function FemaleWarePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Image carousel */}
-              <div className="relative bg-gray-50 h-80 rounded-xl overflow-hidden flex flex-col items-center justify-center">
+              <div className="relative bg-gray-50 h-96 rounded-xl overflow-hidden flex flex-col items-center justify-center">
                 {selectedProduct.images?.length > 0 ? (
                   <>
                     <img
                       src={`http://localhost:8070${selectedProduct.images[modalImageIndex]}`}
                       alt={selectedProduct.name}
-                      className="w-full h-full object-cover rounded-lg"
+                      className="w-full h-full object-contain rounded-lg"
                     />
-                    {/* Thumbnail previews */}
+                    {/* Thumbnails */}
                     <div className="flex gap-2 mt-3 overflow-x-auto">
                       {selectedProduct.images.map((img, idx) => (
                         <img
@@ -422,7 +422,7 @@ export default function FemaleWarePage() {
                           src={`http://localhost:8070${img}`}
                           alt="thumb"
                           onClick={() => setModalImageIndex(idx)}
-                          className={`h-16 w-16 object-cover rounded-lg border cursor-pointer ${
+                          className={`h-16 w-16 object-contain rounded-lg border cursor-pointer ${
                             modalImageIndex === idx
                               ? "border-pink-500"
                               : "border-gray-200"

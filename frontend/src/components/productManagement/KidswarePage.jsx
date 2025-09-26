@@ -91,7 +91,7 @@ export default function KidswarePage() {
     setFilteredProducts(result);
   }, [products, searchTerm, filterBy, sortBy]);
 
-  // Auto image slideshow for cards
+  // Auto image slideshow
   useEffect(() => {
     const interval = setInterval(() => {
       setImageIndexes((prev) => {
@@ -107,7 +107,7 @@ export default function KidswarePage() {
     return () => clearInterval(interval);
   }, [products]);
 
-  // Toggle favorites
+  // Favorites
   const toggleFavorite = (id) => {
     setFavorites((prev) => {
       const newFav = new Set(prev);
@@ -131,7 +131,7 @@ export default function KidswarePage() {
     );
   };
 
-  // Add to cart with quantity
+  // Add to cart
   const handleAddToCart = async (id, size = "M") => {
     try {
       const res = await fetch("http://localhost:8070/product/addToCart", {
@@ -145,10 +145,6 @@ export default function KidswarePage() {
         alert(result.message || "Error adding to cart");
         return;
       }
-
-      setProducts((prev) =>
-        prev.map((p) => (p._id === result.product._id ? result.product : p))
-      );
 
       const savedCart = JSON.parse(localStorage.getItem("cart")) || [];
       const existingItem = savedCart.find(
@@ -198,7 +194,7 @@ export default function KidswarePage() {
 
         {/* Controls */}
         <div className="mb-8 space-y-4">
-          {/* Search Bar */}
+          {/* Search */}
           <div className="relative max-w-md mx-auto">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
@@ -210,7 +206,7 @@ export default function KidswarePage() {
             />
           </div>
 
-          {/* Filters and View Controls */}
+          {/* Filters + View */}
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <button
@@ -293,7 +289,7 @@ export default function KidswarePage() {
           )}
         </div>
 
-        {/* Products Grid/List */}
+        {/* Products Grid */}
         {filteredProducts.length === 0 ? (
           <div className="text-center py-20">
             <Package className="w-24 h-24 text-yellow-400 mx-auto mb-6" />
@@ -328,12 +324,12 @@ export default function KidswarePage() {
                   }}
                   className="cursor-pointer group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 overflow-hidden border border-gray-100 hover:border-yellow-300"
                 >
-                  <div className="relative bg-gray-50 h-64">
+                  <div className="relative bg-gray-50 h-64 flex items-center justify-center">
                     {product.images?.length > 0 ? (
                       <img
                         src={`http://localhost:8070${product.images[currentIndex]}`}
                         alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
                       />
                     ) : (
                       <div className="h-full flex items-center justify-center text-gray-400 bg-gray-100">
@@ -390,9 +386,7 @@ export default function KidswarePage() {
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
                 Easy Returns
               </h3>
-              <p className="text-gray-600">
-                30-day hassle-free return policy
-              </p>
+              <p className="text-gray-600">30-day hassle-free return policy</p>
             </div>
           </div>
         </div>
@@ -411,15 +405,15 @@ export default function KidswarePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Image carousel */}
-              <div className="relative bg-gray-50 h-80 rounded-xl overflow-hidden flex flex-col items-center justify-center">
+              <div className="relative bg-gray-50 h-96 rounded-xl overflow-hidden flex flex-col items-center justify-center">
                 {selectedProduct.images?.length > 0 ? (
                   <>
                     <img
                       src={`http://localhost:8070${selectedProduct.images[modalImageIndex]}`}
                       alt={selectedProduct.name}
-                      className="w-full h-full object-cover rounded-lg"
+                      className="w-full h-full object-contain rounded-lg"
                     />
-                    {/* Thumbnail previews */}
+                    {/* Thumbnails */}
                     <div className="flex gap-2 mt-3 overflow-x-auto">
                       {selectedProduct.images.map((img, idx) => (
                         <img
@@ -427,7 +421,7 @@ export default function KidswarePage() {
                           src={`http://localhost:8070${img}`}
                           alt="thumb"
                           onClick={() => setModalImageIndex(idx)}
-                          className={`h-16 w-16 object-cover rounded-lg border cursor-pointer ${
+                          className={`h-16 w-16 object-contain rounded-lg border cursor-pointer ${
                             modalImageIndex === idx
                               ? "border-yellow-500"
                               : "border-gray-200"
@@ -458,7 +452,7 @@ export default function KidswarePage() {
                 )}
               </div>
 
-              {/* Product Info */}
+              {/* Info */}
               <div className="space-y-4">
                 <h2 className="text-3xl font-bold text-gray-900">
                   {selectedProduct.name}

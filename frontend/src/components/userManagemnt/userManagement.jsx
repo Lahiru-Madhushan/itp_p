@@ -5,8 +5,6 @@ import {
   Trash2,
   User,
   Filter,
-  Edit,
-  X,
 } from "lucide-react";
 import { generateUsersPDF } from "./userPDF";
 
@@ -17,18 +15,6 @@ const Users = () => {
   const [roleFilter, setRoleFilter] = useState("all");
   const [yearFilter, setYearFilter] = useState("all");
   const [monthFilter, setMonthFilter] = useState("all");
-  const [editingUser, setEditingUser] = useState(null);
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    address: "",
-    phoneNumber: "",
-    role: "customer",
-    password: "",
-    confirmPassword: "",
-  });
-  const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -80,21 +66,6 @@ const Users = () => {
     return matchesSearch && matchesRole && matchesYear && matchesMonth;
   });
 
-  const openEditModal = (user) => {
-    setEditingUser(user);
-    setFormData({
-      firstName: user.firstName || "",
-      lastName: user.lastName || "",
-      email: user.email || "",
-      address: user.address || "",
-      phoneNumber: user.phoneNumber || "",
-      role: user.role?.toLowerCase() || "customer", // ensure lowercase
-      password: "",
-      confirmPassword: "",
-    });
-    setModalOpen(true);
-  };
-
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this user?")) return;
     try {
@@ -108,57 +79,22 @@ const Users = () => {
     }
   };
 
-  const handleFormSubmit = async (e) => {
-    e.preventDefault();
-    if (!formData.firstName || !formData.lastName || !formData.email) {
-      alert("Please fill all required fields");
-      return;
-    }
-    if (formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match");
-      return;
-    }
-
+  const handleRoleChange = async (id, newRole) => {
     try {
-      if (editingUser) {
-        const bodyData = { ...formData };
-        if (!bodyData.password) delete bodyData.password;
-        if (!bodyData.confirmPassword) delete bodyData.confirmPassword;
-
-        // normalize role
-        if (bodyData.role) {
-          bodyData.role = bodyData.role.toLowerCase();
-        }
-
-        const res = await fetch(
-          `http://localhost:8070/user/updateUser/${editingUser._id}`,
-          {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify(bodyData),
-          }
-        );
-        const updatedUser = await res.json();
-        setUsers((prev) =>
-          prev.map((u) => (u._id === updatedUser._id ? updatedUser : u))
-        );
-        alert("User updated successfully");
-      } else {
-        const res = await fetch(`http://localhost:8070/user/addUser`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(formData),
-        });
-        const newUser = await res.json();
-        setUsers((prev) => [...prev, newUser]);
-        alert("User added successfully");
-      }
-      setModalOpen(false);
+      const res = await fetch(`http://localhost:8070/user/updateUser/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ role: newRole }),
+      });
+      const updatedUser = await res.json();
+      setUsers((prev) =>
+        prev.map((u) => (u._id === updatedUser._id ? updatedUser : u))
+      );
+      alert("Role updated successfully");
     } catch (error) {
       console.error(error);
-      alert("Error saving user");
+      alert("Error updating role");
     }
   };
 
@@ -328,16 +264,16 @@ const Users = () => {
                     <td className="px-4 py-3">{user.phoneNumber}</td>
                     <td className="px-4 py-3">{user.email}</td>
                     <td className="px-4 py-3">
-                      <span
-                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          user.role.toLowerCase() === "admin"
-                            ? "bg-purple-100 text-purple-800"
-                            : "bg-green-100 text-green-800"
-                        }`}
+                      <select
+                        value={user.role}
+                        onChange={(e) =>
+                          handleRoleChange(user._id, e.target.value)
+                        }
+                        className="border border-gray-300 rounded-lg px-2 py-1 text-sm focus:ring-2 focus:ring-yellow-400 outline-none"
                       >
-                        {user.role.charAt(0).toUpperCase() +
-                          user.role.slice(1)}
-                      </span>
+                        <option value="admin">Admin</option>
+                        <option value="customer">Customer</option>
+                      </select>
                     </td>
                     <td className="px-4 py-3">
                       {user.createdAt
@@ -345,12 +281,6 @@ const Users = () => {
                         : "N/A"}
                     </td>
                     <td className="px-4 py-3 text-center flex justify-center gap-2">
-                      <button
-                        onClick={() => openEditModal(user)}
-                        className="inline-flex items-center px-3 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md text-xs transition"
-                      >
-                        <Edit className="h-4 w-4 mr-1" /> Edit
-                      </button>
                       <button
                         onClick={() => handleDelete(user._id)}
                         className="inline-flex items-center px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md text-xs transition"
@@ -374,119 +304,6 @@ const Users = () => {
         <div className="mt-6 bg-white rounded-xl shadow-lg p-4 text-center text-gray-600">
           Showing {filteredUsers.length} of {users.length} users
         </div>
-
-        {/* Modal */}
-        {modalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 transition-opacity">
-            <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-6 relative animate-fadeIn">
-              <button
-                onClick={() => setModalOpen(false)}
-                className="absolute top-4 right-4 text-gray-600 hover:text-gray-800"
-              >
-                <X className="h-6 w-6" />
-              </button>
-              <h2 className="text-xl font-bold text-gray-800 mb-4">
-                {editingUser ? "Edit User" : "Add New User"}
-              </h2>
-              <form className="grid grid-cols-1 gap-4" onSubmit={handleFormSubmit}>
-                <input
-                  type="text"
-                  placeholder="First Name"
-                  value={formData.firstName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, firstName: e.target.value })
-                  }
-                  className="border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-yellow-400 outline-none"
-                  required
-                />
-                <input
-                  type="text"
-                  placeholder="Last Name"
-                  value={formData.lastName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, lastName: e.target.value })
-                  }
-                  className="border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-yellow-400 outline-none"
-                  required
-                />
-                <input
-                  type="email"
-                  placeholder="Email"
-                  value={formData.email}
-                  onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
-                  }
-                  className="border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-yellow-400 outline-none"
-                  required
-                />
-                <input
-                  type="text"
-                  placeholder="Address"
-                  value={formData.address}
-                  onChange={(e) =>
-                    setFormData({ ...formData, address: e.target.value })
-                  }
-                  className="border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-yellow-400 outline-none"
-                />
-                <input
-                  type="text"
-                  placeholder="Phone Number"
-                  value={formData.phoneNumber}
-                  onChange={(e) =>
-                    setFormData({ ...formData, phoneNumber: e.target.value })
-                  }
-                  className="border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-yellow-400 outline-none"
-                />
-                <select
-                  value={formData.role}
-                  onChange={(e) =>
-                    setFormData({ ...formData, role: e.target.value })
-                  }
-                  className="border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-yellow-400 outline-none"
-                >
-                  <option value="admin">Admin</option>
-                  <option value="customer">Customer</option>
-                </select>
-                <input
-                  type="password"
-                  placeholder="Password"
-                  value={formData.password}
-                  onChange={(e) =>
-                    setFormData({ ...formData, password: e.target.value })
-                  }
-                  className="border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-yellow-400 outline-none"
-                />
-                <input
-                  type="password"
-                  placeholder="Confirm Password"
-                  value={formData.confirmPassword}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      confirmPassword: e.target.value,
-                    })
-                  }
-                  className="border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-yellow-400 outline-none"
-                />
-                <div className="flex justify-end gap-4 mt-2">
-                  <button
-                    type="submit"
-                    className="bg-yellow-400 hover:bg-yellow-500 text-gray-800 px-6 py-2 rounded-lg font-medium transition"
-                  >
-                    {editingUser ? "Update" : "Save"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setModalOpen(false)}
-                    className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-2 rounded-lg font-medium transition"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

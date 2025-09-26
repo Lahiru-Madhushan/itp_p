@@ -20,9 +20,6 @@ const NavigationBar = () => {
   const menuRef = useRef(null);
   const location = useLocation();
 
-  const iconHoverClass =
-    "p-3 text-gray-600 hover:text-black hover:bg-gradient-to-r hover:from-yellow-100 hover:to-yellow-200 rounded-full transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-yellow-400/30 relative overflow-hidden";
-
   const navigationItems = [
     { name: "Home", href: "/" },
     { name: "Mensware", href: "/Mensware" },
@@ -164,7 +161,7 @@ const NavigationBar = () => {
 
             {/* Right Icons */}
             <div className="flex items-center space-x-3">
-              {/* ⭐ Cart Button (more visible) */}
+              {/* ⭐ Cart Button */}
               <div className="relative" ref={cartRef}>
                 <button
                   onClick={() => setIsCartOpen(!isCartOpen)}
@@ -183,17 +180,20 @@ const NavigationBar = () => {
                 )}
               </div>
 
-              {/* Profile (unchanged) */}
+              {/* ⭐ Profile (transparent default, yellow on hover) */}
               <div className="relative" ref={profileRef}>
                 {isAuthenticated ? (
                   <button
                     onClick={() => setIsProfileOpen(!isProfileOpen)}
-                    className={iconHoverClass}
+                    className="flex items-center justify-center w-12 h-12 rounded-full bg-transparent text-black font-bold shadow-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-yellow-400 hover:to-yellow-500 hover:scale-110"
                   >
                     <User className="h-6 w-6" />
                   </button>
                 ) : (
-                  <Link to="/register" className={iconHoverClass}>
+                  <Link
+                    to="/register"
+                    className="flex items-center justify-center w-12 h-12 rounded-full bg-transparent text-black font-bold shadow-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-yellow-400 hover:to-yellow-500 hover:scale-110"
+                  >
                     <User className="h-6 w-6" />
                   </Link>
                 )}
@@ -252,11 +252,11 @@ const NavigationBar = () => {
                 )}
               </div>
 
-              {/* Mobile Menu Button (unchanged) */}
+              {/* Mobile Menu Button */}
               <div className="lg:hidden" ref={menuRef}>
                 <button
                   onClick={() => setIsMenuOpen(!isMenuOpen)}
-                  className={iconHoverClass}
+                  className="p-3 text-gray-600 hover:text-black hover:bg-gradient-to-r hover:from-yellow-100 hover:to-yellow-200 rounded-full transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-yellow-400/30 relative overflow-hidden"
                 >
                   {isMenuOpen ? (
                     <X className="h-6 w-6" />
@@ -269,7 +269,7 @@ const NavigationBar = () => {
           </div>
         </div>
 
-        {/* Mobile Menu (unchanged) */}
+        {/* Mobile Menu */}
         {isMenuOpen && (
           <div className="lg:hidden bg-gradient-to-br from-white via-yellow-50 to-white border-t-2 border-yellow-200 shadow-2xl">
             <div className="px-4 pt-4 pb-6 space-y-3 sm:px-6">
@@ -288,7 +288,7 @@ const NavigationBar = () => {
         )}
       </nav>
 
-      {/* Secondary Info Bar (unchanged) */}
+      {/* Secondary Info Bar */}
       <div className="bg-gradient-to-r from-yellow-100 via-yellow-50 to-yellow-100 border-b border-yellow-200 py-3 px-4">
         <div className="max-w-7xl mx-auto flex items-center justify-center space-x-12 text-sm font-semibold text-gray-700">
           <div className="flex items-center space-x-2 group cursor-pointer hover:scale-105 transition-transform duration-300">
