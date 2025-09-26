@@ -7,12 +7,13 @@ const rawSchema = new Schema(
     name: { type: String, required: true },
     unit: { type: String, required: true },
     quantity: { type: Number, required: true },
-    price: { type: Number, required: true },
+    unitPrice: { type: Number, required: true }, // ✅ per unit price
+    price: { type: Number, required: true },     // ✅ total = quantity * unitPrice
     suppliers: { type: String, required: true },
     status: { type: String, required: true }
   },
   { timestamps: true }
 );
 
-const raw = mongoose.model("raw", rawSchema);
-export default raw;
+const Raw = mongoose.model("Raw", rawSchema);
+export default Raw;

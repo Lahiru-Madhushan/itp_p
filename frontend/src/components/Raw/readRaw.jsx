@@ -2,12 +2,10 @@
 import React, { useState, useEffect } from "react";
 import {
   Search,
-  Filter,
   Trash2,
   Edit3,
   PackagePlus,
   X,
-  DollarSign,
   Download,
 } from "lucide-react";
 import axiosInstance from "../../lib/axios";
@@ -25,7 +23,8 @@ export default function RawManagement() {
     name: "",
     unit: "",
     quantity: "",
-    price: "",
+    unitPrice: "", // ✅ added field
+    price: "", // total price (auto calculated)
     suppliers: "",
     status: "",
   });
@@ -62,6 +61,7 @@ export default function RawManagement() {
       name: "",
       unit: "",
       quantity: "",
+      unitPrice: "",
       price: "",
       suppliers: "",
       status: "",
@@ -75,6 +75,7 @@ export default function RawManagement() {
       name: item.name,
       unit: item.unit,
       quantity: item.quantity,
+      unitPrice: item.unitPrice || "", // fallback if not stored yet
       price: item.price,
       suppliers: item.suppliers,
       status: item.status,
@@ -82,7 +83,14 @@ export default function RawManagement() {
     setModalOpen(true);
   };
 
-  // ✅ Validation added here
+  // ✅ Auto-calc total price
+  useEffect(() => {
+    if (formData.quantity && formData.unitPrice) {
+      const total = Number(formData.quantity) * Number(formData.unitPrice);
+      setFormData((prev) => ({ ...prev, price: total }));
+    }
+  }, [formData.quantity, formData.unitPrice]);
+
   const handleFormSubmit = (e) => {
     e.preventDefault();
 
@@ -94,20 +102,12 @@ export default function RawManagement() {
       alert("⚠️ Please select a unit.");
       return;
     }
-    if (
-      !formData.quantity ||
-      isNaN(formData.quantity) ||
-      Number(formData.quantity) <= 0
-    ) {
+    if (!formData.quantity || isNaN(formData.quantity) || Number(formData.quantity) <= 0) {
       alert("⚠️ Quantity must be a positive number.");
       return;
     }
-    if (
-      !formData.price ||
-      isNaN(formData.price) ||
-      Number(formData.price) <= 0
-    ) {
-      alert("⚠️ Price must be a positive number.");
+    if (!formData.unitPrice || isNaN(formData.unitPrice) || Number(formData.unitPrice) <= 0) {
+      alert("⚠️ Unit Price must be a positive number.");
       return;
     }
     if (!formData.suppliers) {
@@ -168,7 +168,6 @@ export default function RawManagement() {
     return okText && okYear && okMonth;
   });
 
-  // Unique years for dropdown
   const uniqueYears = [
     ...new Set(
       raw
@@ -192,13 +191,12 @@ export default function RawManagement() {
             <button
               onClick={() => generateRawPDF(filtered)}
               className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg shadow"
-
             >
               <Download className="h-4 w-4" /> Download PDF
             </button>
             <button
               onClick={openAddModal}
-             className="bg-blue-500 text-white px-5 py-3 rounded-lg shadow hover:bg-blue-600"
+              className="bg-blue-500 text-white px-5 py-3 rounded-lg shadow hover:bg-blue-600"
             >
               + Add New
             </button>
@@ -207,21 +205,18 @@ export default function RawManagement() {
 
         {/* Search & Filters */}
         <div className="bg-white rounded-xl shadow-lg p-6 mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
-          {/* Search */}
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
             <input
               type="text"
               placeholder="Search by name or supplier..."
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-
-          {/* Year Filter */}
           <select
-            className="pl-3 pr-8 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 bg-white"
+            className="pl-3 pr-8 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
             value={yearFilter}
             onChange={(e) => setYearFilter(e.target.value)}
           >
@@ -232,31 +227,17 @@ export default function RawManagement() {
               </option>
             ))}
           </select>
-
-          {/* Month Filter */}
           <select
-            className="pl-3 pr-8 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 bg-white"
+            className="pl-3 pr-8 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
             value={monthFilter}
             onChange={(e) => setMonthFilter(e.target.value)}
           >
             <option value="all">All Months</option>
             {[
-              "January",
-              "February",
-              "March",
-              "April",
-              "May",
-              "June",
-              "July",
-              "August",
-              "September",
-              "October",
-              "November",
-              "December",
+              "January","February","March","April","May","June",
+              "July","August","September","October","November","December",
             ].map((m, idx) => (
-              <option key={m} value={idx + 1}>
-                {m}
-              </option>
+              <option key={m} value={idx + 1}>{m}</option>
             ))}
           </select>
         </div>
@@ -270,12 +251,11 @@ export default function RawManagement() {
                   <th className="px-4 py-3 text-left font-semibold">Name</th>
                   <th className="px-4 py-3 text-left font-semibold">Unit</th>
                   <th className="px-4 py-3 text-left font-semibold">Quantity</th>
-                  <th className="px-4 py-3 text-left font-semibold">Price</th>
+                
+                  <th className="px-4 py-3 text-left font-semibold">Total Price</th>
                   <th className="px-4 py-3 text-left font-semibold">Suppliers</th>
                   <th className="px-4 py-3 text-left font-semibold">Status</th>
-                  <th className="px-4 py-3 text-center font-semibold">
-                    Actions
-                  </th>
+                  <th className="px-4 py-3 text-center font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -290,6 +270,7 @@ export default function RawManagement() {
                       <td className="px-4 py-3">{item.name}</td>
                       <td className="px-4 py-3">{item.unit}</td>
                       <td className="px-4 py-3">{item.quantity}</td>
+                      
                       <td className="px-4 py-3">{formatPrice(item.price)}</td>
                       <td className="px-4 py-3">{item.suppliers}</td>
                       <td className="px-4 py-3">
@@ -321,7 +302,7 @@ export default function RawManagement() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="7" className="text-center py-6 text-gray-500">
+                    <td colSpan="8" className="text-center py-6 text-gray-500">
                       No raw materials found
                     </td>
                   </tr>
@@ -329,11 +310,6 @@ export default function RawManagement() {
               </tbody>
             </table>
           </div>
-        </div>
-
-        {/* Footer */}
-        <div className="mt-6 bg-white rounded-xl shadow-lg p-4 text-center text-gray-600">
-          Showing {filtered.length} of {raw.length} raw materials
         </div>
 
         {/* Modal */}
@@ -353,10 +329,8 @@ export default function RawManagement() {
               <form className="grid gap-4" onSubmit={handleFormSubmit}>
                 <select
                   value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   required
                 >
                   <option value="">Select Material</option>
@@ -370,10 +344,8 @@ export default function RawManagement() {
 
                 <select
                   value={formData.unit}
-                  onChange={(e) =>
-                    setFormData({ ...formData, unit: e.target.value })
-                  }
-                  className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                  onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                  className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   required
                 >
                   <option value="">Select Unit</option>
@@ -387,35 +359,46 @@ export default function RawManagement() {
                   type="number"
                   placeholder="Quantity"
                   value={formData.quantity}
-                  onChange={(e) =>
-                    setFormData({ ...formData, quantity: e.target.value })
-                  }
-                  className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                  onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                  className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   required
                 />
 
                 <div className="flex items-center border border-gray-300 rounded-lg">
-                  <span className="px-3 text-gray-500 font-semibold text-sm">
-                    LKR
-                  </span>
+                  <span className="px-3 text-gray-500 font-semibold text-sm">LKR</span>
                   <input
                     type="number"
-                    placeholder="Total Price"
-                    value={formData.price}
-                    onChange={(e) =>
-                      setFormData({ ...formData, price: e.target.value })
-                    }
-                    className="flex-1 p-3 rounded-r-lg focus:ring-2 focus:ring-green-500 outline-none"
+                    placeholder="Unit Price"
+                    value={formData.unitPrice}
+                    onChange={(e) => setFormData({ ...formData, unitPrice: e.target.value })}
+                    className="flex-1 p-3 rounded-r-lg focus:ring-2 focus:ring-blue-500 outline-none"
                     required
                   />
                 </div>
 
+                <div className="flex items-center border border-gray-300 rounded-lg bg-gray-50">
+                  <span className="px-3 text-gray-500 font-semibold text-sm">Total</span>
+                  <input
+                    type="number"
+                    placeholder="Total Price"
+                    value={formData.price}
+                    readOnly
+                    className="flex-1 p-3 rounded-r-lg bg-gray-50 text-gray-700 cursor-not-allowed"
+                  />
+                </div>
+
+               {/* <input
+                  type="text"
+                  placeholder="Description"
+                  className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+                */}
+
+
                 <select
                   value={formData.suppliers}
-                  onChange={(e) =>
-                    setFormData({ ...formData, suppliers: e.target.value })
-                  }
-                  className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                  onChange={(e) => setFormData({ ...formData, suppliers: e.target.value })}
+                  className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   required
                 >
                   <option value="">Select Supplier</option>
@@ -426,12 +409,13 @@ export default function RawManagement() {
 
                 <select
                   value={formData.status}
-                  onChange={(e) =>
-                    setFormData({ ...formData, status: e.target.value })
-                  }
-                  className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   required
                 >
+
+                
+
                   <option value="">Select Status</option>
                   <option value="available">Available</option>
                   <option value="unavailable">Unavailable</option>
@@ -440,7 +424,7 @@ export default function RawManagement() {
                 <div className="flex justify-end gap-4 mt-2">
                   <button
                     type="submit"
-                    className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg font-medium transition"
+                    className="bg-blue-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg font-medium transition"
                   >
                     {editingRaw ? "Update" : "Save"}
                   </button>
