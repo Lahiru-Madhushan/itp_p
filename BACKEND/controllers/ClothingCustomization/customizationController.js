@@ -17,7 +17,12 @@ export const addCustomization = async (req, res) => {
       fabricColor,
       size,
       measurements,
-      designImage: req.file ? req.file.path : "", // if uploading via multer
+      
+      designImage: req.file ? req.file.filename : "",
+
+      //designImage: req.file ? `customizations/${req.file.filename}` : "",//
+// ✅ saves only "filename.png"
+ // if uploading via multer
     });
 
     await newCustomization.save();

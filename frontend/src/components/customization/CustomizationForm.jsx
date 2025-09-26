@@ -277,6 +277,37 @@ const handleChange = (e) => {
               {errors.fabric && <p className="text-red-500 text-sm mt-1 animate-shake font-semibold">{errors.fabric}</p>}
             </div>
 
+{/* Extra input 
+<div className="grid grid-cols-1 gap-8 mb-10">
+  <div className="space-y-3 animate-slide-right">
+    <label className="flex items-center gap-3 text-sm font-bold text-gray-700">
+      <div className="p-2 bg-gradient-to-r from-purple-400 to-pink-500 rounded-xl shadow-lg">
+        <Palette className="w-4 h-4 text-white" />
+      </div>
+      Description
+    </label>
+    <textarea
+      name="description"
+      placeholder="Enter your description..."
+      value={formData.description || ""}
+      onChange={handleChange}
+      rows={2} // 👈 smaller height (about 2 lines tall, like inputs)
+      className="border-2 border-purple-200 p-3 rounded-2xl w-full bg-gradient-to-r from-white to-purple-50 focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition-all duration-300 transform hover:scale-102 focus:scale-105 shadow-md hover:shadow-lg text-base font-medium resize-y"
+    />
+  </div>
+</div>
+*/}
+
+
+
+
+
+
+
+
+
+
+
             <div className="space-y-3 animate-slide-left">
               <label className="flex items-center gap-3 text-sm font-bold text-gray-700">
                 <div className="w-6 h-6 bg-gradient-to-r from-red-400 to-pink-400 rounded-xl shadow-lg animate-pulse"></div>

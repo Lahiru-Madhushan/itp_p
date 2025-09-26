@@ -18,13 +18,19 @@ const router = express.Router();
 
 // Multer storage setup
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "uploads/customizations/"),
-  filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
+  destination: (req, file, cb) => {
+    cb(null, "uploads/customizations"); // folder where files will be stored
+  },
+  filename: (req, file, cb) => {
+    // Unique filename: timestamp-originalname
+    cb(null, Date.now() + "-" + file.originalname);
+  },
 });
 const upload = multer({ storage });
 
 // ✅ Customer routes
-router.post("/add", verifyToken, upload.single("designImage"), addCustomization);
+router.post("/add", upload.single("designImage"), addCustomization);
+/*router.post("/add", verifyToken, upload.single("designImage"), addCustomization);*/
 router.get("/user/:userId", verifyToken, getCustomizationsByUser); // fetch my customizations
 router.delete("/:id", verifyToken, cancelCustomization); // cancel (if Pending)
 router.put("/:id", verifyToken, updateCustomization);
