@@ -82,16 +82,40 @@ export default function RawManagement() {
     setModalOpen(true);
   };
 
+  // ✅ Validation added here
   const handleFormSubmit = (e) => {
     e.preventDefault();
+
+    if (!formData.name) {
+      alert("⚠️ Please select a material.");
+      return;
+    }
+    if (!formData.unit) {
+      alert("⚠️ Please select a unit.");
+      return;
+    }
     if (
-      !formData.name ||
-      !formData.unit ||
       !formData.quantity ||
-      !formData.price ||
-      !formData.suppliers
+      isNaN(formData.quantity) ||
+      Number(formData.quantity) <= 0
     ) {
-      alert("⚠️ Please fill all fields.");
+      alert("⚠️ Quantity must be a positive number.");
+      return;
+    }
+    if (
+      !formData.price ||
+      isNaN(formData.price) ||
+      Number(formData.price) <= 0
+    ) {
+      alert("⚠️ Price must be a positive number.");
+      return;
+    }
+    if (!formData.suppliers) {
+      alert("⚠️ Please select a supplier.");
+      return;
+    }
+    if (!formData.status) {
+      alert("⚠️ Please select a status.");
       return;
     }
 
@@ -154,12 +178,12 @@ export default function RawManagement() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="bg-white rounded-xl shadow-lg p-6 mb-6 flex justify-between items-center">
           <div className="flex items-center space-x-3">
-            <PackagePlus className="h-8 w-8 text-green-600" />
+            <PackagePlus className="h-8 w-8 text-blue-600" />
             <h1 className="text-3xl font-bold text-gray-800">
               Raw Materials Management
             </h1>
@@ -167,13 +191,14 @@ export default function RawManagement() {
           <div className="flex gap-3">
             <button
               onClick={() => generateRawPDF(filtered)}
-              className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg shadow"
+              className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg shadow"
+
             >
               <Download className="h-4 w-4" /> Download PDF
             </button>
             <button
               onClick={openAddModal}
-              className="bg-green-500 text-white px-5 py-3 rounded-lg shadow hover:bg-green-600"
+             className="bg-blue-500 text-white px-5 py-3 rounded-lg shadow hover:bg-blue-600"
             >
               + Add New
             </button>
@@ -240,7 +265,7 @@ export default function RawManagement() {
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-[900px] w-full table-auto text-sm border-collapse">
-              <thead className="bg-gradient-to-r from-green-600 to-green-700 text-white">
+              <thead className="bg-blue-600 text-white">
                 <tr>
                   <th className="px-4 py-3 text-left font-semibold">Name</th>
                   <th className="px-4 py-3 text-left font-semibold">Unit</th>

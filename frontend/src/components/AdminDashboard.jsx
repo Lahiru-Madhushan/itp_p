@@ -10,14 +10,15 @@ import {
   Menu,
   X,
   LogOut,
-  Layers, // Inventory icon
+  Layers,   // Inventory icon
+  Truck,    // Supplier icon
 } from "lucide-react";
 
 import UserManagement from "./userManagemnt/userManagement";
-import Customization from "./customization/CustomizationAdmin"
-import Rawmaterial from "./Raw/readRaw"
+import Customization from "./customization/CustomizationAdmin";
+import Rawmaterial from "./Raw/readRaw";
 import Product from "../components/productManagement/AdminProducts";
-
+import SupplierEmail from "./supplier/SupplierEmail"; 
 import { useAuthStore } from "../store/user";
 
 const AdminDashboard = () => {
@@ -33,7 +34,8 @@ const AdminDashboard = () => {
     { id: "feedback", label: "Reviews", icon: MessageSquare, path: "/admin/dashboard/feedback" },
     { id: "product-management", label: "Products", icon: Package, path: "/admin/dashboard/products" },
     { id: "customization-management", label: "Customization", icon: Settings, path: "/admin/dashboard/settings" },
-    { id: "inventory-management", label: "Inventory", icon: Layers, path: "/admin/dashboard/inventory" }, // Added
+    { id: "inventory-management", label: "Inventory", icon: Layers, path: "/admin/dashboard/inventory" },
+    { id: "supplier-management", label: "Suppliers", icon: Truck, path: "/admin/dashboard/suppliers" }, // ✅ NEW
   ];
 
   const handleNavigation = (item) => {
@@ -121,7 +123,8 @@ const AdminDashboard = () => {
           <Route path="feedback" element={<div>💬 Reviews Management</div>} />
           <Route path="products" element={<Product />} />
           <Route path="settings" element={<Customization />} />
-          <Route path="inventory" element={<Rawmaterial />} /> 
+          <Route path="inventory" element={<Rawmaterial />} />
+          <Route path="suppliers" element={<SupplierEmail />} /> {/* ✅ NEW ROUTE */}
         </Routes>
       </div>
     </div>

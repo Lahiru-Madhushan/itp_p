@@ -51,6 +51,10 @@ app.use("/customization", customizationRoutes);
 import rawRoutes from "./routes/RawManagement/raw.js";
 app.use("/raw", rawRoutes);
 
+import supplierMailRoutes from "./routes/suplierManagement/supplierMailRoutes.js";
+app.use("/supplier", supplierMailRoutes);
+
+
 
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
