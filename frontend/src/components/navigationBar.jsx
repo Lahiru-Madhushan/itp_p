@@ -11,7 +11,7 @@ const NavigationBar = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
-  // Cart state (NEW)
+  // Cart state
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [cart, setCart] = useState([]);
   const cartRef = useRef(null);
@@ -32,19 +32,22 @@ const NavigationBar = () => {
     { name: "Reviews", href: "/reviews" },
   ];
 
-  // Scroll effect (unchanged)
+  // Scroll effect
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Close dropdowns on outside click (unchanged + cart)
+  // Close dropdowns on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (profileRef.current && !profileRef.current.contains(e.target)) setIsProfileOpen(false);
-      if (menuRef.current && !menuRef.current.contains(e.target)) setIsMenuOpen(false);
-      if (cartRef.current && !cartRef.current.contains(e.target)) setIsCartOpen(false);
+      if (profileRef.current && !profileRef.current.contains(e.target))
+        setIsProfileOpen(false);
+      if (menuRef.current && !menuRef.current.contains(e.target))
+        setIsMenuOpen(false);
+      if (cartRef.current && !cartRef.current.contains(e.target))
+        setIsCartOpen(false);
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -57,12 +60,27 @@ const NavigationBar = () => {
       setCart(savedCart);
     };
     loadCart();
-    // NOTE: native 'storage' only fires across tabs; we also trigger it manually in app after cart changes.
     window.addEventListener("storage", loadCart);
     return () => window.removeEventListener("storage", loadCart);
   }, []);
 
-  // Remove item: call backend to restore stock, then update localStorage
+  // ⭐ Show notification when cart updates
+  useEffect(() => {
+    if (cart.length === 0) return;
+    const notification = document.createElement("div");
+    notification.className =
+      "fixed top-20 right-4 bg-yellow-400 text-black font-bold px-6 py-3 rounded-xl shadow-2xl z-[9999] transition-all duration-500";
+    notification.innerText = "✓ Item added to cart!";
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+      notification.style.opacity = "0";
+      notification.style.transform = "translateY(-10px)";
+      setTimeout(() => notification.remove(), 500);
+    }, 1500);
+  }, [cart]);
+
+  // Remove item from cart
   const handleRemoveItem = async (id, qty = 1) => {
     try {
       await fetch("http://localhost:8070/product/removeFromCart", {
@@ -74,7 +92,6 @@ const NavigationBar = () => {
       const updated = cart.filter((item) => item._id !== id);
       setCart(updated);
       localStorage.setItem("cart", JSON.stringify(updated));
-      // notify any listeners (same-tab)
       window.dispatchEvent(new Event("storage"));
     } catch (err) {
       console.error("Error removing from cart:", err);
@@ -98,7 +115,9 @@ const NavigationBar = () => {
       {/* Main Navbar */}
       <nav
         className={`bg-white relative overflow-visible transition-all duration-300 ${
-          isScrolled ? "shadow-2xl shadow-yellow-500/20" : "shadow-xl shadow-yellow-500/10"
+          isScrolled
+            ? "shadow-2xl shadow-yellow-500/20"
+            : "shadow-xl shadow-yellow-500/10"
         } sticky top-0 z-50`}
       >
         <div className="absolute inset-0 bg-gradient-to-r from-yellow-50 via-white to-yellow-50 opacity-50"></div>
@@ -112,7 +131,9 @@ const NavigationBar = () => {
                   <div className="absolute -inset-2 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-xl opacity-0 group-hover:opacity-20 transition-all duration-300"></div>
                   <div className="relative text-3xl font-black tracking-tight">
                     <span className="text-black">YONG</span>
-                    <span className="text-yellow-500 ml-2 drop-shadow-lg">SMART</span>
+                    <span className="text-yellow-500 ml-2 drop-shadow-lg">
+                      SMART
+                    </span>
                   </div>
                   <div className="absolute -bottom-1 left-0 w-0 h-1 bg-gradient-to-r from-yellow-400 to-yellow-600 group-hover:w-full transition-all duration-500 rounded-full"></div>
                 </div>
@@ -134,22 +155,24 @@ const NavigationBar = () => {
                   }`}
                 >
                   {item.name}
-                  {item.special && <div className="absolute top-0 right-0 w-3 h-3 bg-yellow-400 rounded-full animate-ping"></div>}
+                  {item.special && (
+                    <div className="absolute top-0 right-0 w-3 h-3 bg-yellow-400 rounded-full animate-ping"></div>
+                  )}
                 </Link>
               ))}
             </div>
 
             {/* Right Icons */}
             <div className="flex items-center space-x-3">
-              {/* Cart (appearance unchanged; now opens dropdown) */}
+              {/* ⭐ Cart Button (more visible) */}
               <div className="relative" ref={cartRef}>
                 <button
                   onClick={() => setIsCartOpen(!isCartOpen)}
-                  className={iconHoverClass}
+                  className="p-3 rounded-full bg-gradient-to-r from-yellow-400 to-yellow-500 text-black font-bold shadow-lg hover:scale-110 transition-transform relative"
                 >
                   <ShoppingCart className="h-6 w-6" />
                   {cart.length > 0 && (
-                    <div className="absolute -top-1 -right-1 bg-gradient-to-r from-yellow-400 to-yellow-500 text-black text-xs rounded-full h-6 w-6 flex items-center justify-center font-black shadow-lg animate-bounce">
+                    <div className="absolute -top-1 -right-1 bg-black text-yellow-400 text-xs rounded-full h-6 w-6 flex items-center justify-center font-bold shadow-md animate-bounce">
                       {cart.length}
                     </div>
                   )}
@@ -170,10 +193,7 @@ const NavigationBar = () => {
                     <User className="h-6 w-6" />
                   </button>
                 ) : (
-                  <Link
-                    to="/register"
-                    className={iconHoverClass}
-                  >
+                  <Link to="/register" className={iconHoverClass}>
                     <User className="h-6 w-6" />
                   </Link>
                 )}
@@ -186,8 +206,12 @@ const NavigationBar = () => {
                           <User className="h-6 w-6 text-black" />
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-black">{user?.name}</p>
-                          <p className="text-sm text-gray-600">{user?.email}</p>
+                          <p className="text-sm font-bold text-black">
+                            {user?.name}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {user?.email}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -234,7 +258,11 @@ const NavigationBar = () => {
                   onClick={() => setIsMenuOpen(!isMenuOpen)}
                   className={iconHoverClass}
                 >
-                  {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                  {isMenuOpen ? (
+                    <X className="h-6 w-6" />
+                  ) : (
+                    <Menu className="h-6 w-6" />
+                  )}
                 </button>
               </div>
             </div>
@@ -267,19 +295,25 @@ const NavigationBar = () => {
             <div className="w-8 h-8 bg-gradient-to-r from-green-400 to-green-500 rounded-full flex items-center justify-center group-hover:rotate-12 transition-transform duration-300">
               <Truck className="w-4 h-4 text-white" />
             </div>
-            <span className="group-hover:text-black transition-colors duration-300">Free Worldwide Shipping</span>
+            <span className="group-hover:text-black transition-colors duration-300">
+              Free Worldwide Shipping
+            </span>
           </div>
           <div className="flex items-center space-x-2 group cursor-pointer hover:scale-105 transition-transform duration-300">
             <div className="w-8 h-8 bg-gradient-to-r from-blue-400 to-blue-500 rounded-full flex items-center justify-center group-hover:rotate-12 transition-transform duration-300">
               <Shield className="w-4 h-4 text-white" />
             </div>
-            <span className="group-hover:text-black transition-colors duration-300">30-Day Easy Returns</span>
+            <span className="group-hover:text-black transition-colors duration-300">
+              30-Day Easy Returns
+            </span>
           </div>
           <div className="flex items-center space-x-2 group cursor-pointer hover:scale-105 transition-transform duration-300">
             <div className="w-8 h-8 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center group-hover:rotate-12 transition-transform duration-300">
               <Zap className="w-4 h-4 text-black" />
             </div>
-            <span className="group-hover:text-black transition-colors duration-300">24/7 Premium Support</span>
+            <span className="group-hover:text-black transition-colors duration-300">
+              24/7 Premium Support
+            </span>
           </div>
         </div>
       </div>
