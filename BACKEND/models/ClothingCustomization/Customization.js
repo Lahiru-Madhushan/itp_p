@@ -92,3 +92,4 @@ const customizationSchema = new Schema(
 
 const Customization = mongoose.model("Customization", customizationSchema);
 export default Customization;
+ 
