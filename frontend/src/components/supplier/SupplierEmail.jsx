@@ -104,25 +104,61 @@ const SupplierEmail = () => {
     }
   };
 
-  // ✅ Export PDF
-  const handleDownloadPDF = () => {
-    const doc = new jsPDF();
-    doc.text("Supplier Orders Report", 14, 16);
-    doc.autoTable({
-      startY: 20,
-      head: [["Supplier", "Email", "Item", "Unit", "Quantity", "Date", "Status"]],
-      body: filteredOrders.map((o) => [
-        o.supplierName,
-        o.email,
-        o.item,
-        o.unit || "N/A",
-        o.quantity,
-        o.createdAt ? new Date(o.createdAt).toLocaleDateString() : "N/A",
-        o.status || "N/A",
-      ]),
-    });
-    doc.save("SupplierOrders_Report.pdf");
-  };
+// ✅ Export PDF with improved UI/UX
+const handleDownloadPDF = () => {
+  const doc = new jsPDF();
+
+  // Title
+  doc.setFontSize(18);
+  doc.setFont("helvetica", "bold");
+  doc.text("Supplier Orders Report", 14, 16);
+
+  // Subtitle (date generated)
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(100);
+  doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 24);
+
+  // Table
+  doc.autoTable({
+    startY: 30,
+    head: [["Supplier", "Email", "Item", "Unit", "Quantity", "Date", "Status"]],
+    body: filteredOrders.map((o) => [
+      o.supplierName,
+      o.email,
+      o.item,
+      o.unit || "N/A",
+      o.quantity,
+      o.createdAt ? new Date(o.createdAt).toLocaleDateString() : "N/A",
+      o.status || "N/A",
+    ]),
+    theme: "grid",
+    headStyles: {
+      fillColor: [41, 128, 185], // Blue header
+      textColor: 255,
+      fontStyle: "bold",
+    },
+    alternateRowStyles: { fillColor: [245, 245, 245] }, // Striped effect
+    styles: { fontSize: 10, cellPadding: 4 },
+  });
+
+  // Footer (page numbers)
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(9);
+    doc.setTextColor(150);
+    doc.text(
+      `Page ${i} of ${pageCount}`,
+      doc.internal.pageSize.getWidth() - 20,
+      doc.internal.pageSize.getHeight() - 10
+    );
+  }
+
+  // Save file
+  doc.save("SupplierOrders_Report.pdf");
+};
+
 
   // ✅ Loader
   if (loading) {
@@ -372,38 +408,32 @@ const SupplierEmail = () => {
                       <>
                         <option value="meters">Meters (m)</option>
                         <option value="centimeters">Centimeters (cm)</option>
-                        <option value="yards">Yards</option>
                       </>
                     )}
                     {formData.item === "Thread" && (
                       <>
-                        <option value="spools">Spools</option>
-                        <option value="cones">Cones</option>
+                        <option value="cones">Centimeters (cm)</option>
                         <option value="meters">Meters (m)</option>
                       </>
                     )}
                     {formData.item === "Buttons" && (
                       <>
-                        <option value="pieces">Pieces (pcs)</option>
-                        <option value="dozens">Dozens (12 pcs)</option>
+                        <option value="box">Box</option>
                       </>
                     )}
                     {formData.item === "Zippers" && (
                       <>
-                        <option value="pieces">Pieces (pcs)</option>
-                        <option value="length_cm">Length (cm)</option>
-                        <option value="length_inch">Length (inch)</option>
+                        <option value="box">Box</option>
                       </>
                     )}
                     {formData.item === "Elastic" && (
                       <>
-                        <option value="meters">Meters (m)</option>
-                        <option value="yards">Yards</option>
+                        <option value="box">Box</option>
                       </>
                     )}
                     {formData.item === "Needles" && (
                       <>
-                        <option value="pieces">Pieces (pcs)</option>
+                        <option value="box">Box</option>
                         <option value="packets_10">Packets (10 pcs)</option>
                         <option value="packets_50">Packets (50 pcs)</option>
                       </>

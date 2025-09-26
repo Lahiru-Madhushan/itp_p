@@ -4,9 +4,9 @@ import SupplierOrder from "../../models/supplierManagement/SupplierOrder.js";
 
 export const sendSupplierOrderEmail = async (req, res) => {
   try {
-    const { supplierName, email, item, quantity } = req.body;
+    const { supplierName, email, item, unit, quantity } = req.body;
 
-    if (!supplierName || !email || !item || !quantity) {
+    if (!supplierName || !email || !item || !unit || !quantity) {
       return res.status(400).json({ error: "All fields are required" });
     }
 
@@ -15,6 +15,7 @@ export const sendSupplierOrderEmail = async (req, res) => {
       supplierName,
       email,
       item,
+      unit,
       quantity,
     });
 
@@ -22,6 +23,7 @@ export const sendSupplierOrderEmail = async (req, res) => {
     const html = SUPPLIER_ORDER_TEMPLATE
       .replace("{supplierName}", supplierName)
       .replace("{item}", item)
+      .replace("{unit}", unit)
       .replace("{quantity}", quantity);
 
     try {

@@ -8,14 +8,20 @@ export const SUPPLIER_ORDER_TEMPLATE = `
         <td style="border:1px solid #ccc; padding:8px; font-weight:bold;">Item</td>
         <td style="border:1px solid #ccc; padding:8px;">{item}</td>
       </tr>
+       <tr>
+        <td style="border:1px solid #ccc; padding:8px; font-weight:bold;">unit</td>
+        <td style="border:1px solid #ccc; padding:8px;">{unit}</td>
+      </tr>
       <tr>
         <td style="border:1px solid #ccc; padding:8px; font-weight:bold;">Quantity</td>
         <td style="border:1px solid #ccc; padding:8px;">{quantity}</td>
       </tr>
+     
+
     </table>
     <p>Please confirm availability and expected delivery timeline.</p>
     <br/>
     <p>Thank you,</p>
-    <p><strong>Yong SMART Procurement Team</strong></p>
+    <p><strong>Yong SMART Team</strong></p>
   </div>
 `;

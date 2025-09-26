@@ -2,7 +2,7 @@
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 
-// Optional logo
+// Optional logo loader
 const getBase64Image = (url) =>
   new Promise((resolve, reject) => {
     const img = new Image();
@@ -51,19 +51,20 @@ export const generateRawPDF = async (rawData) => {
   // Table
   let totalPrice = 0;
   const tableRows = rawData.map((r) => {
-    totalPrice += Number(r.price) || 0;
+    const rowTotal = Number(r.price) || 0;
+    totalPrice += rowTotal;
     return [
       r.name,
       r.unit,
       r.quantity,
-      `Rs. ${r.price}`,
+      `Rs. ${rowTotal.toFixed(2)}`, // ✅ now shows Total Price per row
       r.suppliers,
       r.status,
     ];
   });
 
   doc.autoTable({
-    head: [["Name", "Unit", "Quantity", "Price", "Suppliers", "Status"]],
+    head: [["Name", "Unit", "Quantity", "Total Price", "Suppliers", "Status"]],
     body: tableRows,
     startY: 72,
     theme: "grid",
@@ -91,10 +92,10 @@ export const generateRawPDF = async (rawData) => {
     },
   });
 
-  // Total Price
+  // ✅ Show Total at bottom
   doc.setFontSize(12).setFont("helvetica", "bold");
   doc.text(
-    `Total Price: Rs. ${totalPrice.toFixed(2)}`,
+    `Grand Total: Rs. ${totalPrice.toFixed(2)}`,
     pageWidth - 20,
     doc.lastAutoTable.finalY + 10,
     { align: "right" }

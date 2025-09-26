@@ -1,11 +1,26 @@
 // controllers/RawManagement/rawController.js
-import raw from "../../models/RawManagement/raw.js";
+import Raw from "../../models/RawManagement/raw.js";
 
 // Create
 export const addRaw = async (req, res) => {
   try {
-    const { name, unit, quantity, price, suppliers, status } = req.body;
-    const newRaw = new raw({ name, unit, quantity, price, suppliers, status });
+    const { name, unit, quantity, unitPrice, suppliers, status } = req.body;
+
+    if (!name || !unit || !quantity || !unitPrice || !suppliers || !status) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    const totalPrice = Number(quantity) * Number(unitPrice);
+
+    const newRaw = new Raw({
+      name,
+      unit,
+      quantity,
+      unitPrice,
+      price: totalPrice, // ✅ store calculated
+      suppliers,
+      status,
+    });
 
     await newRaw.save();
     res.json({ status: "Raw material added", raw: newRaw });
@@ -18,7 +33,7 @@ export const addRaw = async (req, res) => {
 // Read all
 export const getAllRaw = async (req, res) => {
   try {
-    const raws = await raw.find();
+    const raws = await Raw.find();
     res.json(raws);
   } catch (err) {
     console.error("Error fetching raw materials:", err);
@@ -30,13 +45,23 @@ export const getAllRaw = async (req, res) => {
 export const updateRaw = async (req, res) => {
   try {
     const rawId = req.params.id;
-    const { name, unit, quantity, price, suppliers, status } = req.body;
+    const { name, unit, quantity, unitPrice, suppliers, status } = req.body;
 
-    const updated = await raw.findByIdAndUpdate(
+    if (!name || !unit || !quantity || !unitPrice || !suppliers || !status) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    const totalPrice = Number(quantity) * Number(unitPrice);
+
+    const updated = await Raw.findByIdAndUpdate(
       rawId,
-      { name, unit, quantity, price, suppliers, status },
+      { name, unit, quantity, unitPrice, price: totalPrice, suppliers, status },
       { new: true, runValidators: true }
     );
+
+    if (!updated) {
+      return res.status(404).json({ error: "Raw material not found" });
+    }
 
     res.status(200).send({ status: "Raw material updated", raw: updated });
   } catch (err) {
@@ -49,7 +74,7 @@ export const updateRaw = async (req, res) => {
 export const deleteRaw = async (req, res) => {
   try {
     const rawId = req.params.id;
-    await raw.findByIdAndDelete(rawId);
+    await Raw.findByIdAndDelete(rawId);
 
     res.status(200).send({ status: "Raw material deleted" });
   } catch (err) {
