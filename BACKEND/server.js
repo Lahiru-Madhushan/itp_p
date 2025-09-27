@@ -7,7 +7,7 @@ import cookieParser from "cookie-parser";
 import path from "path";
 import { fileURLToPath } from "url";
 
-
+// mongodb connection//
 dotenv.config();
 
 const app = express();
