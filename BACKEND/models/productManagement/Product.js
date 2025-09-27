@@ -11,6 +11,8 @@ const ProductSchema = new Schema(
     description: { type: String, trim: true, maxlength: 1000 },
     images: [{ type: String, trim: true }], // image paths
     stockQuantity: { type: Number, required: true, min: 0 },
+  
+
 
     size: {
       type: String,
