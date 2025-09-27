@@ -4,6 +4,7 @@ import pandas as pd
 import re
 import string
 import pickle
+import sys
 from nltk.stem import PorterStemmer
 
 # Initialize Porter Stemmer
@@ -20,7 +21,7 @@ vocab_path = os.path.join(script_dir, 'static', 'model', 'vocabulary.txt')
 def load_resources():
     """Load all required resources with error handling"""
     resources = {}
-    
+
     try:
         # Load model
         with open(model_path, 'rb') as f:
@@ -197,13 +198,19 @@ def check_file_existence():
     
     return all_exist
 
+
+
 if __name__ == "__main__":
-    # Check file existence
-    check_file_existence()
-    print()
-    
-    # Test the prediction system
-    if model is not None and len(tokens) > 0:
-        test_prediction()
+    # If arguments are passed, run sentiment prediction
+    if len(sys.argv) > 1:
+        text = " ".join(sys.argv[1:])
+        print(predict_sentiment(text))
     else:
-        print("Cannot test prediction - required resources are missing.")
+        # Otherwise, run default checks/tests 
+        check_file_existence()
+        print()
+        
+        if model is not None and len(tokens) > 0:
+            test_prediction()
+        else:
+            print("Cannot test prediction - required resources are missing.")

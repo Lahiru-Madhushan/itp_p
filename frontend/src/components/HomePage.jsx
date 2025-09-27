@@ -4,7 +4,7 @@ import Footer from "./Footer";
 import ChatBot from "./AI/chatbot"
 const Homepage = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const images = ['images/navigate1.png', 'images/navigate2.jpg', 'images/navigate3.jpg'];
+  const images = [ 'images/navigate2.jpg', 'images/navigate3.jpg','images/navigate4.jpg','images/navigate5.jpg'];
 
   // Auto-slide carousel
   useEffect(() => {
