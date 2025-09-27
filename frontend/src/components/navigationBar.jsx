@@ -26,7 +26,7 @@ const NavigationBar = () => {
     { name: "Femaleware", href: "/FemaleWarePage" },
     { name: "Kidsware", href: "/KidswarePage" },
     { name: "Customize Clothes", href: "/customize", special: true },
-    { name: "Reviews", href: "/reviews" },
+    { name: "Reviews", href: "/Feedback" },
   ];
 
   // Scroll effect

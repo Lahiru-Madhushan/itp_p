@@ -55,6 +55,11 @@ app.use("/raw", rawRoutes);
 import supplierMailRoutes from "./routes/suplierManagement/supplierMailRoutes.js";
 app.use("/supplier", supplierMailRoutes);
 
+import feedbackRoutes from "./routes/FeedbackManagement/feedback.js";
+app.use("/feedback", feedbackRoutes);
+
+import chart from "./routes/piechart/feedback.js"
+app.use("/Chart",chart)
 
 
 
