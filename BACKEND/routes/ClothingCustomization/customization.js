@@ -29,8 +29,8 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // ✅ Customer routes
-router.post("/add", upload.single("designImage"), addCustomization);
-/*router.post("/add", verifyToken, upload.single("designImage"), addCustomization);*/
+//router.post("/add", upload.single("designImage"), addCustomization);
+router.post("/add", verifyToken, upload.single("designImage"), addCustomization);
 router.get("/user/:userId", verifyToken, getCustomizationsByUser); // fetch my customizations
 router.delete("/:id", verifyToken, cancelCustomization); // cancel (if Pending)
 router.put("/:id", verifyToken, updateCustomization);
