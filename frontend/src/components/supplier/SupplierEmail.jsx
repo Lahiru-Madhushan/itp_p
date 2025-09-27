@@ -1,3 +1,4 @@
+// frontend/src/components/supplier/SupplierEmail.jsx
 import React, { useEffect, useState } from "react";
 import { Search, Download, Trash2, Mail, X } from "lucide-react";
 import jsPDF from "jspdf";
@@ -104,61 +105,54 @@ const SupplierEmail = () => {
     }
   };
 
-// ✅ Export PDF with improved UI/UX
-const handleDownloadPDF = () => {
-  const doc = new jsPDF();
+  // ✅ Export PDF
+  const handleDownloadPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text("Supplier Orders Report", 14, 16);
 
-  // Title
-  doc.setFontSize(18);
-  doc.setFont("helvetica", "bold");
-  doc.text("Supplier Orders Report", 14, 16);
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 24);
 
-  // Subtitle (date generated)
-  doc.setFontSize(11);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(100);
-  doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 24);
+    doc.autoTable({
+      startY: 30,
+      head: [["Supplier", "Email", "Item", "Unit", "Quantity", "Date", "Status"]],
+      body: filteredOrders.map((o) => [
+        o.supplierName,
+        o.email,
+        o.item,
+        o.unit || "N/A",
+        o.quantity,
+        o.createdAt ? new Date(o.createdAt).toLocaleDateString() : "N/A",
+        o.status || "N/A",
+      ]),
+      theme: "grid",
+      headStyles: {
+        fillColor: [41, 128, 185],
+        textColor: 255,
+        fontStyle: "bold",
+      },
+      alternateRowStyles: { fillColor: [245, 245, 245] },
+      styles: { fontSize: 10, cellPadding: 4 },
+    });
 
-  // Table
-  doc.autoTable({
-    startY: 30,
-    head: [["Supplier", "Email", "Item", "Unit", "Quantity", "Date", "Status"]],
-    body: filteredOrders.map((o) => [
-      o.supplierName,
-      o.email,
-      o.item,
-      o.unit || "N/A",
-      o.quantity,
-      o.createdAt ? new Date(o.createdAt).toLocaleDateString() : "N/A",
-      o.status || "N/A",
-    ]),
-    theme: "grid",
-    headStyles: {
-      fillColor: [41, 128, 185], // Blue header
-      textColor: 255,
-      fontStyle: "bold",
-    },
-    alternateRowStyles: { fillColor: [245, 245, 245] }, // Striped effect
-    styles: { fontSize: 10, cellPadding: 4 },
-  });
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(9);
+      doc.setTextColor(150);
+      doc.text(
+        `Page ${i} of ${pageCount}`,
+        doc.internal.pageSize.getWidth() - 20,
+        doc.internal.pageSize.getHeight() - 10
+      );
+    }
 
-  // Footer (page numbers)
-  const pageCount = doc.internal.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    doc.setFontSize(9);
-    doc.setTextColor(150);
-    doc.text(
-      `Page ${i} of ${pageCount}`,
-      doc.internal.pageSize.getWidth() - 20,
-      doc.internal.pageSize.getHeight() - 10
-    );
-  }
-
-  // Save file
-  doc.save("SupplierOrders_Report.pdf");
-};
-
+    doc.save("SupplierOrders_Report.pdf");
+  };
 
   // ✅ Loader
   if (loading) {
@@ -181,9 +175,7 @@ const handleDownloadPDF = () => {
           <div className="flex items-center space-x-3">
             <Mail className="h-8 w-8 text-blue-600" />
             <div>
-              <h1 className="text-3xl font-bold text-gray-800">
-                Supplier Orders
-              </h1>
+              <h1 className="text-3xl font-bold text-gray-800">Supplier Orders</h1>
               <p className="text-gray-600">Manage and track supplier orders</p>
             </div>
           </div>
@@ -198,7 +190,6 @@ const handleDownloadPDF = () => {
         {/* Search & Filters */}
         <div className="bg-white rounded-xl shadow-lg p-6 mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
           <div className="flex flex-col sm:flex-row gap-4 flex-1 flex-wrap">
-            {/* Search */}
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
               <input
@@ -210,7 +201,6 @@ const handleDownloadPDF = () => {
               />
             </div>
 
-            {/* Year Filter */}
             <select
               className="pl-3 pr-8 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 bg-white"
               value={yearFilter}
@@ -224,7 +214,6 @@ const handleDownloadPDF = () => {
               ))}
             </select>
 
-            {/* Month Filter */}
             <select
               className="pl-3 pr-8 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 bg-white"
               value={monthFilter}
@@ -239,7 +228,6 @@ const handleDownloadPDF = () => {
             </select>
           </div>
 
-          {/* Download PDF */}
           <button
             onClick={handleDownloadPDF}
             className="flex items-center space-x-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-3 rounded-lg font-medium transition"
@@ -255,39 +243,21 @@ const handleDownloadPDF = () => {
             <table className="min-w-[900px] max-w-6xl mx-auto table-auto border-collapse text-sm">
               <thead className="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
                 <tr>
-                  <th className="px-4 py-3 text-left font-semibold uppercase tracking-wider">
-                    Supplier
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold uppercase tracking-wider">
-                    Email
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold uppercase tracking-wider">
-                    Item
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold uppercase tracking-wider">
-                    Unit
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold uppercase tracking-wider">
-                    Quantity
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-4 py-3 text-center font-semibold uppercase tracking-wider">
-                    Actions
-                  </th>
+                  <th className="px-4 py-3 text-left font-semibold uppercase tracking-wider">Supplier</th>
+                  <th className="px-4 py-3 text-left font-semibold uppercase tracking-wider">Email</th>
+                  <th className="px-4 py-3 text-left font-semibold uppercase tracking-wider">Item</th>
+                  <th className="px-4 py-3 text-left font-semibold uppercase tracking-wider">Unit</th>
+                  <th className="px-4 py-3 text-left font-semibold uppercase tracking-wider">Quantity</th>
+                  <th className="px-4 py-3 text-left font-semibold uppercase tracking-wider">Date</th>
+                  <th className="px-4 py-3 text-left font-semibold uppercase tracking-wider">Status</th>
+                  <th className="px-4 py-3 text-center font-semibold uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filteredOrders.map((o, index) => (
                   <tr
                     key={o._id}
-                    className={`hover:bg-gray-50 ${
-                      index % 2 === 0 ? "bg-white" : "bg-gray-50"
-                    }`}
+                    className={`hover:bg-gray-50 ${index % 2 === 0 ? "bg-white" : "bg-gray-50"}`}
                   >
                     <td className="px-4 py-3">{o.supplierName}</td>
                     <td className="px-4 py-3">{o.email}</td>
@@ -295,9 +265,7 @@ const handleDownloadPDF = () => {
                     <td className="px-4 py-3">{o.unit || "N/A"}</td>
                     <td className="px-4 py-3">{o.quantity}</td>
                     <td className="px-4 py-3">
-                      {o.createdAt
-                        ? new Date(o.createdAt).toLocaleDateString()
-                        : "N/A"}
+                      {o.createdAt ? new Date(o.createdAt).toLocaleDateString() : "N/A"}
                     </td>
                     <td className="px-4 py-3">{o.status || "N/A"}</td>
                     <td className="px-4 py-3 text-center">
@@ -313,9 +281,7 @@ const handleDownloadPDF = () => {
               </tbody>
             </table>
             {filteredOrders.length === 0 && (
-              <div className="text-center py-12 text-gray-500">
-                No supplier orders found
-              </div>
+              <div className="text-center py-12 text-gray-500">No supplier orders found</div>
             )}
           </div>
         </div>
@@ -330,9 +296,7 @@ const handleDownloadPDF = () => {
               >
                 <X className="h-6 w-6" />
               </button>
-              <h2 className="text-xl font-bold mb-4 text-gray-800">
-                Send Supplier Order
-              </h2>
+              <h2 className="text-xl font-bold mb-4 text-gray-800">Send Supplier Order</h2>
               <form className="grid gap-4" onSubmit={handleFormSubmit}>
                 {/* Supplier Dropdown */}
                 <select
@@ -340,20 +304,12 @@ const handleDownloadPDF = () => {
                   onChange={(e) => {
                     const selected = e.target.value;
                     let email = "";
-                    if (selected === "Global Fabrics Ltd")
-                      email = "globalFabrics@gmail.com";
-                    if (selected === "UniTex Suppliers")
-                      email = "unitexSuppliers@gmail.com";
-                    if (selected === "Elegant Labels Co.")
-                      email = "elegant.labels.co@gmail.com";
-                    if (selected === "Dilshara")
-                      email = "dilshara329@gmail.com";
+                    if (selected === "Global Fabrics Ltd") email = "globalFabrics@gmail.com";
+                    if (selected === "UniTex Suppliers") email = "unitexSuppliers@gmail.com";
+                    if (selected === "Elegant Labels Co.") email = "elegant.labels.co@gmail.com";
+                    if (selected === "Example") email = "dilshara329@gmail.com";
 
-                    setFormData({
-                      ...formData,
-                      supplierName: selected,
-                      email,
-                    });
+                    setFormData({ ...formData, supplierName: selected, email });
                   }}
                   className="border rounded-lg p-3"
                   required
@@ -362,7 +318,7 @@ const handleDownloadPDF = () => {
                   <option value="Global Fabrics Ltd">Global Fabrics Ltd</option>
                   <option value="UniTex Suppliers">UniTex Suppliers</option>
                   <option value="Elegant Labels Co.">Elegant Labels Co.</option>
-                  <option value="Dilshara">Dilshara</option>
+                  <option value="Example">Example</option>
                 </select>
 
                 {/* Email auto-filled */}
@@ -378,59 +334,43 @@ const handleDownloadPDF = () => {
                 {/* Item Dropdown */}
                 <select
                   value={formData.item}
-                  onChange={(e) =>
-                    setFormData({ ...formData, item: e.target.value, unit: "" })
-                  }
+                  onChange={(e) => setFormData({ ...formData, item: e.target.value, unit: "" })}
                   className="border rounded-lg p-3"
                   required
                 >
                   <option value="">Select Material</option>
-                  <option value="Fabrics">Fabrics</option>
-                  <option value="Thread">Thread</option>
+                  <option value="Cotton">Cotton</option>
+                  <option value="Denim">Denim</option>
                   <option value="Buttons">Buttons</option>
                   <option value="Zippers">Zippers</option>
                   <option value="Elastic">Elastic</option>
                   <option value="Needles">Needles</option>
                 </select>
 
-                {/* Unit Dropdown (dynamic) */}
+                {/* Unit Dropdown */}
                 {formData.item && (
                   <select
                     value={formData.unit || ""}
-                    onChange={(e) =>
-                      setFormData({ ...formData, unit: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
                     className="border rounded-lg p-3"
                     required
                   >
                     <option value="">Select Unit</option>
-                    {formData.item === "Fabrics" && (
+                    {formData.item === "Cotton" && (
                       <>
                         <option value="meters">Meters (m)</option>
                         <option value="centimeters">Centimeters (cm)</option>
                       </>
                     )}
-                    {formData.item === "Thread" && (
+                    {formData.item === "Denim" && (
                       <>
-                        <option value="cones">Centimeters (cm)</option>
+                        <option value="centimeters">Centimeters (cm)</option>
                         <option value="meters">Meters (m)</option>
                       </>
                     )}
-                    {formData.item === "Buttons" && (
-                      <>
-                        <option value="box">Box</option>
-                      </>
-                    )}
-                    {formData.item === "Zippers" && (
-                      <>
-                        <option value="box">Box</option>
-                      </>
-                    )}
-                    {formData.item === "Elastic" && (
-                      <>
-                        <option value="box">Box</option>
-                      </>
-                    )}
+                    {formData.item === "Buttons" && <option value="box">Box</option>}
+                    {formData.item === "Zippers" && <option value="box">Box</option>}
+                    {formData.item === "Elastic" && <option value="box">Box</option>}
                     {formData.item === "Needles" && (
                       <>
                         <option value="box">Box</option>
@@ -441,14 +381,18 @@ const handleDownloadPDF = () => {
                   </select>
                 )}
 
-                {/* Quantity */}
+                {/* Quantity with live validation */}
                 <input
                   type="number"
                   placeholder="Quantity"
                   value={formData.quantity}
-                  onChange={(e) =>
-                    setFormData({ ...formData, quantity: e.target.value })
-                  }
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "" || Number(val) > 0) {
+                      setFormData({ ...formData, quantity: val });
+                    }
+                  }}
+                  min="1"
                   className="border rounded-lg p-3"
                   required
                 />
@@ -456,7 +400,7 @@ const handleDownloadPDF = () => {
                 <div className="flex justify-end gap-3 mt-2">
                   <button
                     type="submit"
-                    className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg"
+                    className="bg-blue-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg"
                   >
                     Send
                   </button>
