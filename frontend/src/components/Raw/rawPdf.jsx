@@ -53,18 +53,22 @@ export const generateRawPDF = async (rawData) => {
   const tableRows = rawData.map((r) => {
     const rowTotal = Number(r.price) || 0;
     totalPrice += rowTotal;
+
+    // ✅ Stock Level calculation
+    const stockLevel = r.quantity <= 10 ? "Low Stock" : "In Stock";
+
     return [
       r.name,
       r.unit,
       r.quantity,
-      `Rs. ${rowTotal.toFixed(2)}`, // ✅ now shows Total Price per row
+      `Rs. ${rowTotal.toFixed(2)}`, // ✅ Total price
       r.suppliers,
-      r.status,
+      stockLevel,
     ];
   });
 
   doc.autoTable({
-    head: [["Name", "Unit", "Quantity", "Total Price", "Suppliers", "Status"]],
+    head: [["Name", "Unit", "Quantity", "Total Price", "Suppliers", "Stock Level"]],
     body: tableRows,
     startY: 72,
     theme: "grid",
