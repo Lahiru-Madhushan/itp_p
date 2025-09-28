@@ -61,6 +61,9 @@ app.use("/feedback", feedbackRoutes);
 import chart from "./routes/piechart/feedback.js"
 app.use("/Chart",chart)
 
-
+// Controllers
+import { handleStripeWebhook } from "./controllers/paymentManagement/paymentController.js";
+import paymentRoutes from "./routes/paymentManagement/payment.js";
+app.use("/api/payments", paymentRoutes);
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

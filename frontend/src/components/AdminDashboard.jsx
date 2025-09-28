@@ -21,6 +21,7 @@ import Product from "../components/productManagement/AdminProducts";
 import SupplierEmail from "./supplier/SupplierEmail"; 
 import FeedbackPage from "./Feedback/AdminFeedback";
 import Chart from "./Chart"
+import PaymentManager from "./paymentManagement/paymentAdmin";
 import { useAuthStore } from "../store/user";
 
 const AdminDashboard = () => {
@@ -121,7 +122,7 @@ const AdminDashboard = () => {
         <Routes>
           <Route index element={<div><Chart /></div>} />
           <Route path="All-user" element={<UserManagement />} />
-          <Route path="payment" element={<Customization />} />
+          <Route path="payment" element={<PaymentManager />} />
           <Route path="feedback" element={<div><FeedbackPage /></div>} />
           <Route path="products" element={<Product />} />
           <Route path="settings" element={<Customization />} />
