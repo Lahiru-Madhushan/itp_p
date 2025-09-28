@@ -23,6 +23,8 @@ import FaqPage from "./components/FaqPage";
 import AboutUsPage from "./components/AboutUsPage";
 import CustomizationForm from "./components/customization/CustomizationForm";
 import Feedback from "./components/Feedback/FeedbackPage";
+import Pay from "./components/paymentManagement/pay"
+
 
 
 import Mensware from "./components/productManagement/Mensware";
@@ -135,6 +137,7 @@ function App() {
           <Route path="/FemaleWarePage" element={<FemaleWarePage />} />
            <Route path="/KidswarePage" element={<KidswarePage />} />
              <Route path="/Feedback" element={<Feedback />} />
+          <Route path="/Pay" element={<Pay />} />
 
 
          
