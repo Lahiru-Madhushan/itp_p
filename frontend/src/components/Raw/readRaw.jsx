@@ -7,6 +7,7 @@ import {
   PackagePlus,
   X,
   Download,
+  MinusCircle,
 } from "lucide-react";
 import axiosInstance from "../../lib/axios";
 import { generateRawPDF } from "./rawPdf"; // utility for PDF
@@ -18,13 +19,16 @@ export default function RawManagement() {
   const [monthFilter, setMonthFilter] = useState("all");
   const [editingRaw, setEditingRaw] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [usageModal, setUsageModal] = useState(false);
+  const [usageValue, setUsageValue] = useState("");
+  const [selectedRaw, setSelectedRaw] = useState(null);
 
   const [formData, setFormData] = useState({
     name: "",
     unit: "",
     quantity: "",
-    unitPrice: "", // ✅ added field
-    price: "", // total price (auto calculated)
+    unitPrice: "",
+    price: "",
     suppliers: "",
     status: "",
   });
@@ -75,7 +79,7 @@ export default function RawManagement() {
       name: item.name,
       unit: item.unit,
       quantity: item.quantity,
-      unitPrice: item.unitPrice || "", // fallback if not stored yet
+      unitPrice: item.unitPrice || "",
       price: item.price,
       suppliers: item.suppliers,
       status: item.status,
@@ -93,31 +97,6 @@ export default function RawManagement() {
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
-
-    if (!formData.name) {
-      alert("⚠️ Please select a material.");
-      return;
-    }
-    if (!formData.unit) {
-      alert("⚠️ Please select a unit.");
-      return;
-    }
-    if (!formData.quantity || isNaN(formData.quantity) || Number(formData.quantity) <= 0) {
-      alert("⚠️ Quantity must be a positive number.");
-      return;
-    }
-    if (!formData.unitPrice || isNaN(formData.unitPrice) || Number(formData.unitPrice) <= 0) {
-      alert("⚠️ Unit Price must be a positive number.");
-      return;
-    }
-    if (!formData.suppliers) {
-      alert("⚠️ Please select a supplier.");
-      return;
-    }
-    if (!formData.status) {
-      alert("⚠️ Please select a status.");
-      return;
-    }
 
     if (editingRaw) {
       axiosInstance
@@ -150,6 +129,41 @@ export default function RawManagement() {
     const n = Number(p);
     if (Number.isNaN(n)) return p;
     return `Rs. ${n.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+  };
+
+  // ✅ Handle material usage
+  const openUsageModal = (item) => {
+    setSelectedRaw(item);
+    setUsageValue("");
+    setUsageModal(true);
+  };
+
+  const handleUseMaterial = () => {
+    if (!usageValue || Number(usageValue) <= 0) {
+      alert("⚠️ Enter a valid usage amount.");
+      return;
+    }
+    if (Number(usageValue) > selectedRaw.quantity) {
+      alert("⚠️ Cannot use more than available stock.");
+      return;
+    }
+
+    const updatedQuantity = selectedRaw.quantity - Number(usageValue);
+
+    axiosInstance
+      .put(`/raw/update/${selectedRaw._id}`, {
+        ...selectedRaw,
+        quantity: updatedQuantity,
+      })
+      .then(() => {
+        alert("✅ Stock updated after usage!");
+        setUsageModal(false);
+        fetchData();
+      })
+      .catch((err) => {
+        console.error("Usage error:", err);
+        alert("❌ Error updating stock usage");
+      });
   };
 
   // 🔎 Apply filters
@@ -203,45 +217,6 @@ export default function RawManagement() {
           </div>
         </div>
 
-        {/* Search & Filters */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-            <input
-              type="text"
-              placeholder="Search by name or supplier..."
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-          <select
-            className="pl-3 pr-8 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
-            value={yearFilter}
-            onChange={(e) => setYearFilter(e.target.value)}
-          >
-            <option value="all">All Years</option>
-            {uniqueYears.map((year) => (
-              <option key={year} value={year}>
-                {year}
-              </option>
-            ))}
-          </select>
-          <select
-            className="pl-3 pr-8 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
-            value={monthFilter}
-            onChange={(e) => setMonthFilter(e.target.value)}
-          >
-            <option value="all">All Months</option>
-            {[
-              "January","February","March","April","May","June",
-              "July","August","September","October","November","December",
-            ].map((m, idx) => (
-              <option key={m} value={idx + 1}>{m}</option>
-            ))}
-          </select>
-        </div>
-
         {/* Table */}
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="overflow-x-auto">
@@ -251,55 +226,72 @@ export default function RawManagement() {
                   <th className="px-4 py-3 text-left font-semibold">Name</th>
                   <th className="px-4 py-3 text-left font-semibold">Unit</th>
                   <th className="px-4 py-3 text-left font-semibold">Quantity</th>
-                
                   <th className="px-4 py-3 text-left font-semibold">Total Price</th>
                   <th className="px-4 py-3 text-left font-semibold">Suppliers</th>
-                  <th className="px-4 py-3 text-left font-semibold">Status</th>
+                  <th className="px-4 py-3 text-left font-semibold">Stock Level</th>
                   <th className="px-4 py-3 text-center font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filtered.length > 0 ? (
-                  filtered.map((item, index) => (
-                    <tr
-                      key={item._id}
-                      className={`hover:bg-gray-50 ${
-                        index % 2 === 0 ? "bg-white" : "bg-gray-50"
-                      }`}
-                    >
-                      <td className="px-4 py-3">{item.name}</td>
-                      <td className="px-4 py-3">{item.unit}</td>
-                      <td className="px-4 py-3">{item.quantity}</td>
-                      
-                      <td className="px-4 py-3">{formatPrice(item.price)}</td>
-                      <td className="px-4 py-3">{item.suppliers}</td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                            item.status === "available"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
-                          }`}
-                        >
-                          {item.status}
+                  filtered.map((item, index) => {
+                    let stockBadge = "";
+                    if (item.quantity === 0) {
+                      stockBadge = (
+                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-200 text-gray-700">
+                          Out of Stock
                         </span>
-                      </td>
-                      <td className="px-4 py-3 text-center flex justify-center gap-2">
-                        <button
-                          onClick={() => openEditModal(item)}
-                          className="inline-flex items-center px-3 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md text-xs transition"
-                        >
-                          <Edit3 className="h-4 w-4 mr-1" /> Update
-                        </button>
-                        <button
-                          onClick={() => handleDelete(item._id)}
-                          className="inline-flex items-center px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md text-xs transition"
-                        >
-                          <Trash2 className="h-4 w-4 mr-1" /> Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))
+                      );
+                    } else if (item.quantity <= 10) {
+                      stockBadge = (
+                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                          Low Stock
+                        </span>
+                      );
+                    } else {
+                      stockBadge = (
+                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                          In Stock
+                        </span>
+                      );
+                    }
+
+                    return (
+                      <tr
+                        key={item._id}
+                        className={`hover:bg-gray-50 ${
+                          index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                        }`}
+                      >
+                        <td className="px-4 py-3">{item.name}</td>
+                        <td className="px-4 py-3">{item.unit}</td>
+                        <td className="px-4 py-3">{item.quantity}</td>
+                        <td className="px-4 py-3">{formatPrice(item.price)}</td>
+                        <td className="px-4 py-3">{item.suppliers}</td>
+                        <td className="px-4 py-3">{stockBadge}</td>
+                        <td className="px-4 py-3 text-center flex justify-center gap-2">
+                          <button
+                            onClick={() => openEditModal(item)}
+                            className="inline-flex items-center px-3 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md text-xs transition"
+                          >
+                            <Edit3 className="h-4 w-4 mr-1" /> Update
+                          </button>
+                          <button
+                            onClick={() => handleDelete(item._id)}
+                            className="inline-flex items-center px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md text-xs transition"
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" /> Delete
+                          </button>
+                          <button
+                            onClick={() => openUsageModal(item)}
+                            className="inline-flex items-center px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-xs transition"
+                          >
+                            <MinusCircle className="h-4 w-4 mr-1" /> Use
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
                 ) : (
                   <tr>
                     <td colSpan="8" className="text-center py-6 text-gray-500">
@@ -312,7 +304,45 @@ export default function RawManagement() {
           </div>
         </div>
 
-        {/* Modal */}
+        {/* Usage Modal */}
+        {usageModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+            <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-6 relative">
+              <button
+                onClick={() => setUsageModal(false)}
+                className="absolute top-4 right-4 text-gray-600 hover:text-gray-800"
+              >
+                <X className="h-6 w-6" />
+              </button>
+              <h2 className="text-xl font-bold text-gray-800 mb-4">
+                Use Material - {selectedRaw?.name}
+              </h2>
+              <input
+                type="number"
+                placeholder="Enter quantity used"
+                value={usageValue}
+                onChange={(e) => setUsageValue(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg mb-4"
+              />
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={handleUseMaterial}
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg"
+                >
+                  Confirm
+                </button>
+                <button
+                  onClick={() => setUsageModal(false)}
+                  className="bg-gray-200 hover:bg-gray-300 px-6 py-2 rounded-lg"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Add/Edit Modal */}
         {modalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
             <div className="bg-white rounded-xl shadow-lg w-full max-w-lg p-6 relative">
@@ -334,8 +364,8 @@ export default function RawManagement() {
                   required
                 >
                   <option value="">Select Material</option>
-                  <option value="Fabrics">Fabrics</option>
-                  <option value="Thread">Thread</option>
+                  <option value="Cotton">Cotton</option>
+                  <option value="Denim">Denim</option>
                   <option value="Buttons">Buttons</option>
                   <option value="Zippers">Zippers</option>
                   <option value="Elastic">Elastic</option>
@@ -350,7 +380,6 @@ export default function RawManagement() {
                 >
                   <option value="">Select Unit</option>
                   <option value="m">Meter (m)</option>
-                  <option value="cm">Centimeter (cm)</option>
                   <option value="pcs">Pieces</option>
                   <option value="box">Box</option>
                 </select>
@@ -361,6 +390,7 @@ export default function RawManagement() {
                   value={formData.quantity}
                   onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
                   className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  min="1"
                   required
                 />
 
@@ -370,8 +400,11 @@ export default function RawManagement() {
                     type="number"
                     placeholder="Unit Price"
                     value={formData.unitPrice}
-                    onChange={(e) => setFormData({ ...formData, unitPrice: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, unitPrice: e.target.value })
+                    }
                     className="flex-1 p-3 rounded-r-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    min="1"
                     required
                   />
                 </div>
@@ -387,13 +420,8 @@ export default function RawManagement() {
                   />
                 </div>
 
-               {/* <input
-                  type="text"
-                  placeholder="Description"
-                  className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-                */}
 
+                  
 
                 <select
                   value={formData.suppliers}
@@ -413,9 +441,6 @@ export default function RawManagement() {
                   className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   required
                 >
-
-                
-
                   <option value="">Select Status</option>
                   <option value="available">Available</option>
                   <option value="unavailable">Unavailable</option>
@@ -444,3 +469,42 @@ export default function RawManagement() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{/*
+<input type="text" placeholder="Description" 
+                  className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"/>
+  
+*/}
+
