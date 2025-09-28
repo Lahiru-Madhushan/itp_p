@@ -81,7 +81,7 @@ const CartDropdown = ({ cart, onRemove }) => {
             Total: <span className="text-yellow-600">Rs. {totalAmount}</span>
           </p>
           <Link
-            to="/checkout"
+            to="/Pay"
             className="block w-full bg-gradient-to-r from-yellow-400 to-yellow-500 text-black text-center py-2 rounded-lg font-bold hover:scale-105 hover:shadow-md transition"
           >
             Proceed to Payment

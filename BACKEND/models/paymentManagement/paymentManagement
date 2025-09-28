@@ -1,0 +1,39 @@
+import mongoose from "mongoose";
+
+const paymentManagementSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+  amount: {
+    type: Number,
+    required: true,
+  },
+  paymentDate: {
+    type: Date,
+    default: Date.now,
+  },
+  paymentMethod: {
+    type: String,
+    enum: ["Credit Card", "Debit Card", "Bank Transfer", "Cash", "Other"],
+    required: true,
+  },
+  status: {
+    type: String,
+    enum: ["Pending", "Completed", "Failed", "Refunded"],
+    default: "Pending",
+  },
+  transactionId: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+});
+
+const PaymentManagement = mongoose.model(
+  "PaymentManagement",
+  paymentManagementSchema
+);
+
+export default PaymentManagement;

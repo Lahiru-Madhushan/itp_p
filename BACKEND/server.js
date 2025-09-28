@@ -55,6 +55,9 @@ app.use("/raw", rawRoutes);
 import supplierMailRoutes from "./routes/suplierManagement/supplierMailRoutes.js";
 app.use("/supplier", supplierMailRoutes);
 
+import paymentRoutes from "./routes/paymentManagement/payment.js";
+app.use("/payment", paymentRoutes);
+
 
 
 
