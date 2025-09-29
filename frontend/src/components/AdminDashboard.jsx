@@ -1,4 +1,4 @@
-import React, { useState } from "react"; 
+import React, { useState } from "react";
 import { Routes, Route, useNavigate } from "react-router-dom";
 import {
   BarChart3,
@@ -12,6 +12,7 @@ import {
   LogOut,
   Layers,   // Inventory icon
   Truck,    // Supplier icon
+  ClipboardList // ✅ Order icon
 } from "lucide-react";
 
 import UserManagement from "./userManagemnt/userManagement";
@@ -20,8 +21,9 @@ import Rawmaterial from "./Raw/readRaw";
 import Product from "../components/productManagement/AdminProducts";
 import SupplierEmail from "./supplier/SupplierEmail"; 
 import FeedbackPage from "./Feedback/AdminFeedback";
-import Chart from "./Chart"
+import Chart from "./Chart";
 import PaymentManager from "./paymentManagement/paymentAdmin";
+import AdminOrders from "./orderManagement/AdminOrders"; // ✅ Import Order Management
 import { useAuthStore } from "../store/user";
 
 const AdminDashboard = () => {
@@ -29,16 +31,17 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const { logout } = useAuthStore();
 
-  // Navigation Items
+  // ✅ Navigation Items
   const navigationItems = [
     { id: "dashboard", label: "Dashboard", icon: BarChart3, path: "/admin/dashboard" },
     { id: "user-management", label: "User Management", icon: Users, path: "/admin/dashboard/All-user" },
+    { id: "orders", label: "Orders", icon: ClipboardList, path: "/admin/dashboard/orders" }, // ✅ Added Orders
     { id: "payment", label: "Payments", icon: CreditCard, path: "/admin/dashboard/payment" },
     { id: "feedback", label: "Reviews", icon: MessageSquare, path: "/admin/dashboard/feedback" },
     { id: "product-management", label: "Products", icon: Package, path: "/admin/dashboard/products" },
     { id: "customization-management", label: "Customization", icon: Settings, path: "/admin/dashboard/settings" },
     { id: "inventory-management", label: "Inventory", icon: Layers, path: "/admin/dashboard/inventory" },
-    { id: "supplier-management", label: "Suppliers", icon: Truck, path: "/admin/dashboard/suppliers" }, // ✅ NEW
+    { id: "supplier-management", label: "Suppliers", icon: Truck, path: "/admin/dashboard/suppliers" },
   ];
 
   const handleNavigation = (item) => {
@@ -122,12 +125,13 @@ const AdminDashboard = () => {
         <Routes>
           <Route index element={<div><Chart /></div>} />
           <Route path="All-user" element={<UserManagement />} />
+          <Route path="orders" element={<AdminOrders />} /> {/* ✅ Orders Route */}
           <Route path="payment" element={<PaymentManager />} />
           <Route path="feedback" element={<div><FeedbackPage /></div>} />
           <Route path="products" element={<Product />} />
           <Route path="settings" element={<Customization />} />
           <Route path="inventory" element={<Rawmaterial />} />
-          <Route path="suppliers" element={<SupplierEmail />} /> {/* ✅ NEW ROUTE */}
+          <Route path="suppliers" element={<SupplierEmail />} />
         </Routes>
       </div>
     </div>

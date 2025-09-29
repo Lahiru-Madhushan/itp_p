@@ -13,8 +13,11 @@ import {
   Shield,
   RotateCcw,
   X,
+  Check,
 } from "lucide-react";
 import Footer from "../Footer";
+
+const API = import.meta.env.VITE_API_BASE_URL || "http://localhost:8070";
 
 export default function KidswarePage() {
   const [products, setProducts] = useState([]);
@@ -34,9 +37,15 @@ export default function KidswarePage() {
   const [modalImageIndex, setModalImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
 
-  // Fetch Kidsware products
+  // Customization state
+  const [customizations, setCustomizations] = useState([]);
+  const [selectedOptions, setSelectedOptions] = useState({});
+  const [enabledOptions, setEnabledOptions] = useState({});
+  const [finalPrice, setFinalPrice] = useState(0);
+
+  // ✅ Fetch Kidsware products
   useEffect(() => {
-    fetch("http://localhost:8070/product/allProducts")
+    fetch(`${API}/product/allProducts`)
       .then((res) => res.json())
       .then((data) => {
         const filtered = data.filter((p) => p.category === "Kidsware");
@@ -55,7 +64,7 @@ export default function KidswarePage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Apply filters and search
+  // ✅ Apply filters and search
   useEffect(() => {
     let result = [...products];
 
@@ -91,7 +100,7 @@ export default function KidswarePage() {
     setFilteredProducts(result);
   }, [products, searchTerm, filterBy, sortBy]);
 
-  // Auto image slideshow
+  // ✅ Auto image slideshow
   useEffect(() => {
     const interval = setInterval(() => {
       setImageIndexes((prev) => {
@@ -131,34 +140,101 @@ export default function KidswarePage() {
     );
   };
 
-  // Add to cart
+  // ✅ Open modal → fetch specific customizations
+  const openProductModal = async (product) => {
+    setSelectedProduct(product);
+    setModalImageIndex(0);
+    setQuantity(1);
+    setSelectedOptions({});
+    setEnabledOptions({});
+    setFinalPrice(product.price);
+    setCustomizations([]);
+
+    try {
+      const res = await fetch(`${API}/customization/product/${product._id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setCustomizations(data); // ✅ use directly
+      }
+    } catch (err) {
+      console.error("Customization fetch error:", err);
+    }
+  };
+
+  // ✅ Price calculation
+  const recalcPrice = (base, options, enabled) => {
+    let extra = 0;
+    Object.keys(enabled).forEach((key) => {
+      if (enabled[key]) {
+        const val = options[key];
+        if (val?.price) extra += Number(val.price);
+      }
+    });
+    setFinalPrice(base + extra);
+  };
+
+  const handleOptionChange = (optionName, value) => {
+    const updated = { ...selectedOptions, [optionName]: value };
+    setSelectedOptions(updated);
+    recalcPrice(selectedProduct.price, updated, enabledOptions);
+  };
+
+  const toggleOptionEnable = (optionName, enabled) => {
+    const updatedEnabled = { ...enabledOptions, [optionName]: enabled };
+    setEnabledOptions(updatedEnabled);
+    
+    // If disabling, remove from selected options
+    if (!enabled) {
+      const updatedSelected = { ...selectedOptions };
+      delete updatedSelected[optionName];
+      setSelectedOptions(updatedSelected);
+      recalcPrice(selectedProduct.price, updatedSelected, updatedEnabled);
+    } else {
+      recalcPrice(selectedProduct.price, selectedOptions, updatedEnabled);
+    }
+  };
+
+  // ✅ Add to cart
   const handleAddToCart = async (id, size = "M") => {
     try {
-      const res = await fetch("http://localhost:8070/product/addToCart", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId: id, quantity }),
-      });
-
-      const result = await res.json();
-      if (!result.success) {
-        alert(result.message || "Error adding to cart");
-        return;
-      }
-
       const savedCart = JSON.parse(localStorage.getItem("cart")) || [];
-      const existingItem = savedCart.find(
-        (item) => item._id === result.product._id && item.size === size
+      
+      // Check if item with same customizations already exists
+      const existingItemIndex = savedCart.findIndex(
+        item => 
+          item._id === selectedProduct._id && 
+          item.size === size &&
+          JSON.stringify(item.customizations) === JSON.stringify(
+            Object.keys(enabledOptions)
+              .filter((k) => enabledOptions[k])
+              .reduce((acc, k) => {
+                acc[k] = selectedOptions[k];
+                return acc;
+              }, {})
+          )
       );
 
-      if (existingItem) {
-        existingItem.quantity = (existingItem.quantity || 1) + quantity;
+      if (existingItemIndex !== -1) {
+        // Update quantity if same item exists
+        savedCart[existingItemIndex].quantity += quantity;
       } else {
-        savedCart.push({ ...result.product, quantity, size });
+        // Add new item
+        savedCart.push({
+          ...selectedProduct,
+          quantity,
+          size,
+          customizations: Object.keys(enabledOptions)
+            .filter((k) => enabledOptions[k])
+            .reduce((acc, k) => {
+              acc[k] = selectedOptions[k];
+              return acc;
+            }, {}),
+          finalPrice,
+        });
       }
 
       localStorage.setItem("cart", JSON.stringify(savedCart));
-      alert(`✓ Added ${quantity} item(s) to cart (Size: ${size})!`);
+      alert(`✓ Added ${quantity} item(s) to cart with customization!`);
       window.dispatchEvent(new Event("storage"));
     } catch (err) {
       console.error("Cart error:", err);
@@ -172,7 +248,7 @@ export default function KidswarePage() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-4 border-yellow-400 border-t-transparent mx-auto mb-4"></div>
           <p className="text-xl text-gray-700 font-medium">
-            Loading Kidsware Collection...
+            Loading Kids Collection...
           </p>
         </div>
       </div>
@@ -188,7 +264,7 @@ export default function KidswarePage() {
             Kids Collection
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Fun, stylish, and comfortable outfits for kids of all ages
+            Fun, stylish, and comfortable outfits for kids of all ages with customization options
           </p>
         </div>
 
@@ -317,17 +393,13 @@ export default function KidswarePage() {
               return (
                 <div
                   key={product._id}
-                  onClick={() => {
-                    setSelectedProduct(product);
-                    setModalImageIndex(0);
-                    setQuantity(1);
-                  }}
+                  onClick={() => openProductModal(product)}
                   className="cursor-pointer group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 overflow-hidden border border-gray-100 hover:border-yellow-300"
                 >
                   <div className="relative bg-gray-50 h-64 flex items-center justify-center">
                     {product.images?.length > 0 ? (
                       <img
-                        src={`http://localhost:8070${product.images[currentIndex]}`}
+                        src={`${API}${product.images[currentIndex]}`}
                         alt={product.name}
                         className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
                       />
@@ -392,13 +464,16 @@ export default function KidswarePage() {
         </div>
       </div>
 
-      {/* Product Modal */}
+      {/* Product Modal with Customization */}
       {selectedProduct && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 animate-fadeIn">
-          <div className="bg-white rounded-2xl max-w-4xl w-full p-6 relative shadow-2xl">
+          <div className="bg-white rounded-2xl max-w-4xl w-full p-6 relative shadow-2xl max-h-[90vh] overflow-y-auto">
             <button
-              onClick={() => setSelectedProduct(null)}
-              className="absolute top-4 right-4 p-2 rounded-full bg-gray-100 hover:bg-gray-200"
+              onClick={() => {
+                setSelectedProduct(null);
+                setCustomizations([]);
+              }}
+              className="absolute top-4 right-4 p-2 rounded-full bg-gray-100 hover:bg-gray-200 z-10"
             >
               <X className="w-5 h-5 text-gray-700" />
             </button>
@@ -409,7 +484,7 @@ export default function KidswarePage() {
                 {selectedProduct.images?.length > 0 ? (
                   <>
                     <img
-                      src={`http://localhost:8070${selectedProduct.images[modalImageIndex]}`}
+                      src={`${API}${selectedProduct.images[modalImageIndex]}`}
                       alt={selectedProduct.name}
                       className="w-full h-full object-contain rounded-lg"
                     />
@@ -418,7 +493,7 @@ export default function KidswarePage() {
                       {selectedProduct.images.map((img, idx) => (
                         <img
                           key={idx}
-                          src={`http://localhost:8070${img}`}
+                          src={`${API}${img}`}
                           alt="thumb"
                           onClick={() => setModalImageIndex(idx)}
                           className={`h-16 w-16 object-contain rounded-lg border cursor-pointer ${
@@ -452,19 +527,95 @@ export default function KidswarePage() {
                 )}
               </div>
 
-              {/* Info */}
+              {/* Product Info & Customization */}
               <div className="space-y-4">
                 <h2 className="text-3xl font-bold text-gray-900">
                   {selectedProduct.name}
                 </h2>
                 <p className="text-gray-600">{selectedProduct.description}</p>
-                <div className="text-2xl font-bold text-yellow-600">
-                  Rs. {selectedProduct.price?.toLocaleString()}
+                
+                {/* Base Price */}
+                <div className="text-xl font-bold text-gray-700">
+                  Base Price: Rs. {selectedProduct.price?.toLocaleString()}
                 </div>
+
+                {/* Stock Info */}
                 <p className="text-sm text-gray-700">
                   Stock: {selectedProduct.stockQuantity} | Size:{" "}
                   {selectedProduct.size || "M"}
                 </p>
+
+                {/* ✅ Customization Options */}
+                {customizations.length > 0 && (
+                  <div className="space-y-4 border-t pt-4">
+                    <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                      <Check className="w-5 h-5 text-green-500" />
+                      Customization Options
+                    </h3>
+                    {customizations.flatMap((c) =>
+                      c.options.map((opt) => (
+                        <div key={opt._id} className="border border-gray-200 rounded-xl p-4 bg-gray-50">
+                          <label className="flex items-center gap-3 font-medium text-gray-900 cursor-pointer">
+                            <div className="relative">
+                              <input
+                                type="checkbox"
+                                checked={enabledOptions[opt.name] || false}
+                                onChange={(e) =>
+                                  toggleOptionEnable(opt.name, e.target.checked)
+                                }
+                                className="w-5 h-5 rounded border-gray-300 text-yellow-600 focus:ring-yellow-500"
+                              />
+                            </div>
+                            <span className="text-lg">{opt.name}</span>
+                            <span className="text-sm text-gray-500 ml-auto">
+                              Optional
+                            </span>
+                          </label>
+
+                          {enabledOptions[opt.name] && (
+                            <div className="mt-3 space-y-2">
+                              <label className="block text-sm font-medium text-gray-700">
+                                Select {opt.name}:
+                              </label>
+                              <select
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-yellow-400 outline-none"
+                                value={selectedOptions[opt.name]?.label || ""}
+                                onChange={(e) => {
+                                  const value = opt.values.find(
+                                    (v) => v.label === e.target.value
+                                  );
+                                  handleOptionChange(opt.name, value);
+                                }}
+                              >
+                                <option value="">Choose an option...</option>
+                                {opt.values.map((v) => (
+                                  <option key={v.label} value={v.label}>
+                                    {v.label} (+Rs. {v.price})
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+
+                {/* ✅ Final Price Display */}
+                <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl p-4 text-white">
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg font-semibold">Final Price:</span>
+                    <span className="text-2xl font-bold">
+                      Rs. {finalPrice?.toLocaleString()}
+                    </span>
+                  </div>
+                  {finalPrice > selectedProduct.price && (
+                    <div className="text-sm text-yellow-100 mt-1">
+                      Includes customization charges
+                    </div>
+                  )}
+                </div>
 
                 {/* Quantity Selector */}
                 <div className="flex items-center gap-3">

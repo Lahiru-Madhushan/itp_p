@@ -25,7 +25,6 @@ const NavigationBar = () => {
     { name: "Mensware", href: "/Mensware" },
     { name: "Femaleware", href: "/FemaleWarePage" },
     { name: "Kidsware", href: "/KidswarePage" },
-    { name: "Customize Clothes", href: "/customize", special: true },
     { name: "Reviews", href: "/Feedback" },
   ];
 

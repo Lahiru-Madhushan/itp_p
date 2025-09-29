@@ -13,13 +13,10 @@ import {
   Calendar,
   CheckCircle,
   AlertCircle,
-  Package,
-  Clock,
-  CheckSquare,
-  Trash2,
-  Edit,
   ShoppingBag,
   RefreshCw,
+  CreditCard,
+  Eye,
 } from "lucide-react";
 import axios from "axios";
 import { useAuthStore } from "../../store/user";
@@ -32,11 +29,9 @@ const UserProfile = () => {
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
   const [updateSuccess, setUpdateSuccess] = useState(false);
-  const [customOrders, setCustomOrders] = useState([]);
-  const [ordersLoading, setOrdersLoading] = useState(true);
+  const [regularOrders, setRegularOrders] = useState([]);
+  const [regularOrdersLoading, setRegularOrdersLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("profile");
-  const [editingOrder, setEditingOrder] = useState(null);
-  const [orderFormData, setOrderFormData] = useState({});
   const [error, setError] = useState("");
 
   const [formData, setFormData] = useState({
@@ -54,7 +49,7 @@ const UserProfile = () => {
   const fetchUserData = async () => {
     if (!user || !user._id) {
       setLoading(false);
-      setOrdersLoading(false);
+      setRegularOrdersLoading(false);
       return;
     }
 
@@ -89,32 +84,55 @@ const UserProfile = () => {
     }
   };
 
-  // Fetch custom orders separately
-  const fetchCustomOrders = async () => {
+  // Fetch regular orders from payment/order system
+  const fetchRegularOrders = async () => {
     if (!user || !user._id) {
-      setOrdersLoading(false);
+      setRegularOrdersLoading(false);
       return;
     }
 
     try {
-      setOrdersLoading(true);
+      setRegularOrdersLoading(true);
       const ordersRes = await axios.get(
-        `http://localhost:8070/customization/user/${user._id}`,
+        `http://localhost:8070/api/payments/user-orders/${user._id}`,
         { withCredentials: true }
       );
-      setCustomOrders(ordersRes.data || []);
+      
+      if (ordersRes.data && ordersRes.data.orders) {
+        setRegularOrders(ordersRes.data.orders);
+      } else {
+        setRegularOrders([]);
+      }
     } catch (err) {
-      console.warn("Could not fetch custom orders:", err.message);
-      // If it's a 404, the route might not exist yet - set empty array
-      setCustomOrders([]);
+      console.warn("Could not fetch regular orders:", err.message);
+      // If endpoint doesn't exist, try the order endpoint directly
+      try {
+        const allOrdersRes = await axios.get(
+          `http://localhost:8070/order/all`,
+          { withCredentials: true }
+        );
+        
+        if (allOrdersRes.data && allOrdersRes.data.orders) {
+          // Filter orders for current user
+          const userOrders = allOrdersRes.data.orders.filter(
+            order => order.userId && order.userId._id === user._id
+          );
+          setRegularOrders(userOrders);
+        } else {
+          setRegularOrders([]);
+        }
+      } catch (secondErr) {
+        console.warn("Alternative order fetch also failed:", secondErr.message);
+        setRegularOrders([]);
+      }
     } finally {
-      setOrdersLoading(false);
+      setRegularOrdersLoading(false);
     }
   };
 
   useEffect(() => {
     fetchUserData();
-    fetchCustomOrders();
+    fetchRegularOrders();
   }, [user]);
 
   const formatDate = (dateString) => {
@@ -133,28 +151,40 @@ const UserProfile = () => {
   };
 
   const getStatusColor = (status) => {
-    switch (status) {
-      case "Pending":
+    switch (status?.toLowerCase()) {
+      case "pending":
         return "bg-yellow-100 text-yellow-800";
-      case "Accepted":
+      case "confirmed":
+      case "accepted":
         return "bg-blue-100 text-blue-800";
-      case "Finished":
+      case "paid":
+      case "completed":
         return "bg-green-100 text-green-800";
+      case "out for delivery":
+        return "bg-purple-100 text-purple-800";
+      case "cancelled":
+        return "bg-red-100 text-red-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
   };
 
   const getStatusIcon = (status) => {
-    switch (status) {
-      case "Pending":
-        return <Clock className="h-4 w-4" />;
-      case "Accepted":
-        return <CheckSquare className="h-4 w-4" />;
-      case "Finished":
+    switch (status?.toLowerCase()) {
+      case "pending":
+        return <CreditCard className="h-4 w-4" />;
+      case "confirmed":
+      case "accepted":
         return <CheckCircle className="h-4 w-4" />;
+      case "paid":
+      case "completed":
+        return <CheckCircle className="h-4 w-4" />;
+      case "out for delivery":
+        return <ShoppingBag className="h-4 w-4" />;
+      case "cancelled":
+        return <X className="h-4 w-4" />;
       default:
-        return <Package className="h-4 w-4" />;
+        return <ShoppingBag className="h-4 w-4" />;
     }
   };
 
@@ -235,86 +265,18 @@ const UserProfile = () => {
     setErrors({});
   };
 
-  // Custom Orders Functions
-  const handleEditOrder = (order) => {
-    if (order.status !== "Pending") return;
-    
-    setEditingOrder(order._id);
-    setOrderFormData({
-      fabric: order.fabric || "",
-      fabricColor: order.fabricColor || "",
-      size: order.size || "",
-      measurements: { ...(order.measurements || {}) },
-    });
-  };
-
-  const handleOrderChange = (e) => {
-    const { name, value } = e.target;
-    if (name.startsWith("measurements.")) {
-      const field = name.split(".")[1];
-      setOrderFormData(prev => ({
-        ...prev,
-        measurements: {
-          ...prev.measurements,
-          [field]: value
-        }
-      }));
-    } else {
-      setOrderFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
-    }
-  };
-
-  const handleUpdateOrder = async (orderId) => {
-    try {
-      const response = await axios.put(
-        `http://localhost:8070/customization/${orderId}`,
-        orderFormData,
-        { withCredentials: true }
-      );
-
-      setCustomOrders(prev => prev.map(order => 
-        order._id === orderId 
-          ? { ...order, ...orderFormData }
-          : order
-      ));
-
-      setEditingOrder(null);
-      setUpdateSuccess(true);
-      setTimeout(() => setUpdateSuccess(false), 3000);
-    } catch (err) {
-      console.error("Error updating order", err);
-      setError("Error updating order. Please try again.");
-    }
-  };
-
-  const handleCancelOrder = async (orderId) => {
-    if (!window.confirm("Are you sure you want to cancel this order?")) return;
-
-    try {
-      await axios.delete(
-        `http://localhost:8070/customization/${orderId}`,
-        { withCredentials: true }
-      );
-
-      setCustomOrders(prev => prev.filter(order => order._id !== orderId));
-      setUpdateSuccess(true);
-      setTimeout(() => setUpdateSuccess(false), 3000);
-    } catch (err) {
-      console.error("Error canceling order", err);
-      setError("Error canceling order. Please try again.");
-    }
-  };
-
-  const cancelEditOrder = () => {
-    setEditingOrder(null);
-    setOrderFormData({});
+  // Regular Orders Functions
+  const handleViewOrderDetails = (order) => {
+    // You can implement a modal or redirect to order details page
+    console.log("View order details:", order);
+    // For now, just show an alert with order info
+    alert(`Order Details:\nID: ${order._id}\nStatus: ${order.status}\nTotal: Rs. ${order.total}\nItems: ${order.items?.length || 0}`);
   };
 
   const retryFetchOrders = () => {
-    fetchCustomOrders();
+    if (activeTab === "orders") {
+      fetchRegularOrders();
+    }
   };
 
   if (!isAuthenticated || !user) {
@@ -389,13 +351,13 @@ const UserProfile = () => {
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-800 mb-2">My Profile</h1>
-          <p className="text-gray-600">Manage your account information and custom orders</p>
+          <p className="text-gray-600">Manage your account information and orders</p>
         </div>
 
-        <div className="flex border-b border-gray-200 mb-8">
+        <div className="flex border-b border-gray-200 mb-8 overflow-x-auto">
           <button
             onClick={() => setActiveTab("profile")}
-            className={`px-6 py-3 font-medium text-lg border-b-2 transition-colors ${
+            className={`px-6 py-3 font-medium text-lg border-b-2 transition-colors whitespace-nowrap ${
               activeTab === "profile"
                 ? "border-yellow-500 text-yellow-600"
                 : "border-transparent text-gray-500 hover:text-gray-700"
@@ -406,14 +368,14 @@ const UserProfile = () => {
           </button>
           <button
             onClick={() => setActiveTab("orders")}
-            className={`px-6 py-3 font-medium text-lg border-b-2 transition-colors ${
+            className={`px-6 py-3 font-medium text-lg border-b-2 transition-colors whitespace-nowrap ${
               activeTab === "orders"
                 ? "border-yellow-500 text-yellow-600"
                 : "border-transparent text-gray-500 hover:text-gray-700"
             }`}
           >
             <ShoppingBag className="inline mr-2 h-5 w-5" />
-            Custom Orders ({customOrders.length})
+            My Orders ({regularOrders.length})
           </button>
         </div>
 
@@ -592,142 +554,111 @@ const UserProfile = () => {
         {activeTab === "orders" && (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-gray-800">My Custom Orders</h2>
+              <h2 className="text-2xl font-bold text-gray-800">My Orders</h2>
               <button
                 onClick={retryFetchOrders}
-                disabled={ordersLoading}
+                disabled={regularOrdersLoading}
                 className="flex items-center space-x-2 bg-yellow-500 hover:bg-yellow-600 disabled:bg-gray-400 text-gray-900 px-4 py-2 rounded-lg"
               >
-                <RefreshCw className={`h-4 w-4 ${ordersLoading ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`h-4 w-4 ${regularOrdersLoading ? 'animate-spin' : ''}`} />
                 <span>Refresh</span>
               </button>
             </div>
 
-            {ordersLoading ? (
+            {regularOrdersLoading ? (
               <div className="text-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto mb-4"></div>
                 <p className="text-gray-800">Loading your orders...</p>
               </div>
-            ) : customOrders.length === 0 ? (
+            ) : regularOrders.length === 0 ? (
               <div className="text-center py-12 bg-gray-50 rounded-2xl">
-                <Package className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No custom orders yet</h3>
-                <p className="text-gray-600 mb-4">Start by creating your first custom clothing order!</p>
+                <ShoppingBag className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No orders yet</h3>
+                <p className="text-gray-600 mb-4">Start shopping to see your orders here!</p>
                 <button
-                  onClick={() => navigate("/customization")}
+                  onClick={() => navigate("/products")}
                   className="bg-yellow-500 hover:bg-yellow-600 text-gray-900 px-6 py-2 rounded-lg font-medium"
                 >
-                  Create Custom Order
+                  Browse Products
                 </button>
               </div>
             ) : (
-              customOrders.map((order) => (
+              regularOrders.map((order) => (
                 <div key={order._id} className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
                   <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4">
                     <div>
-                      <h3 className="text-xl font-bold text-gray-800 capitalize">
-                        {order.clothingType || "Custom Order"}
+                      <h3 className="text-xl font-bold text-gray-800">
+                        Order #{order._id?.slice(-8).toUpperCase()}
                       </h3>
-                      <p className="text-gray-600">Ordered on {formatDate(order.createdAt)}</p>
+                      <p className="text-gray-600">Placed on {formatDate(order.createdAt)}</p>
+                      {order.paymentId && (
+                        <p className="text-sm text-gray-500">Payment ID: {order.paymentId}</p>
+                      )}
                     </div>
                     <div className="flex items-center space-x-4 mt-2 lg:mt-0">
                       <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(order.status)}`}>
                         {getStatusIcon(order.status)}
-                        <span className="ml-1">{order.status || "Unknown"}</span>
+                        <span className="ml-1 capitalize">{order.status || "Unknown"}</span>
                       </span>
-                      {order.status === "Pending" && (
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleEditOrder(order)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            title="Edit Order"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleCancelOrder(order._id)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Cancel Order"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      )}
+                      <span className="text-lg font-bold text-yellow-600">
+                        Rs. {order.total || "0.00"}
+                      </span>
                     </div>
                   </div>
 
-                  {editingOrder === order._id ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                      <input
-                        type="text"
-                        name="fabric"
-                        value={orderFormData.fabric || ""}
-                        onChange={handleOrderChange}
-                        className="border p-2 rounded-lg"
-                        placeholder="Fabric"
-                      />
-                      <input
-                        type="text"
-                        name="fabricColor"
-                        value={orderFormData.fabricColor || ""}
-                        onChange={handleOrderChange}
-                        className="border p-2 rounded-lg"
-                        placeholder="Fabric Color"
-                      />
-                      <input
-                        type="text"
-                        name="size"
-                        value={orderFormData.size || ""}
-                        onChange={handleOrderChange}
-                        className="border p-2 rounded-lg"
-                        placeholder="Size"
-                      />
-                      <div className="flex space-x-2 md:col-span-2">
-                        <button
-                          onClick={() => handleUpdateOrder(order._id)}
-                          className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg font-medium"
-                        >
-                          Save Changes
-                        </button>
-                        <button
-                          onClick={cancelEditOrder}
-                          className="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded-lg font-medium"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                      <div className="bg-gray-50 p-3 rounded-lg">
-                        <label className="text-sm text-gray-600">Fabric</label>
-                        <p className="font-medium">{order.fabric || "Not specified"}</p>
-                      </div>
-                      <div className="bg-gray-50 p-3 rounded-lg">
-                        <label className="text-sm text-gray-600">Color</label>
-                        <p className="font-medium">{order.fabricColor || "Not specified"}</p>
-                      </div>
-                      <div className="bg-gray-50 p-3 rounded-lg">
-                        <label className="text-sm text-gray-600">Size</label>
-                        <p className="font-medium">{order.size || "Not specified"}</p>
-                      </div>
-                      {order.measurements && Object.keys(order.measurements).some(key => order.measurements[key]) && (
-                        <div className="md:col-span-3 bg-gray-50 p-3 rounded-lg">
-                          <label className="text-sm text-gray-600">Measurements</label>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
-                            {Object.entries(order.measurements).map(([key, value]) => 
-                              value && (
-                                <div key={key} className="text-sm">
-                                  <span className="text-gray-600 capitalize">{key}:</span>
-                                  <span className="font-medium ml-1">{value}</span>
-                                </div>
-                              )
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <div>
+                      <h4 className="font-semibold text-gray-800 mb-2">Items</h4>
+                      <div className="space-y-2">
+                        {order.items?.map((item, index) => (
+                          <div key={index} className="flex items-center space-x-3 bg-gray-50 p-3 rounded-lg">
+                            {item.images?.[0] && (
+                              <img
+                                src={`http://localhost:8070${item.images[0]}`}
+                                alt={item.name}
+                                className="w-12 h-12 object-cover rounded"
+                              />
                             )}
+                            <div className="flex-1">
+                              <p className="font-medium text-gray-800">{item.name}</p>
+                              <p className="text-sm text-gray-600">
+                                Rs. {item.finalPrice || item.price} × {item.quantity}
+                              </p>
+                              {item.customizations && Object.keys(item.customizations).length > 0 && (
+                                <p className="text-xs text-gray-500">
+                                  Customizations: {Object.keys(item.customizations).join(", ")}
+                                </p>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        ))}
+                      </div>
                     </div>
-                  )}
+
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="font-semibold text-gray-800 mb-2">Order Actions</h4>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            onClick={() => handleViewOrderDetails(order)}
+                            className="flex items-center space-x-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg text-sm"
+                          >
+                            <Eye className="h-4 w-4" />
+                            <span>View Details</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                        <h4 className="font-semibold text-yellow-800 mb-1">Order Summary</h4>
+                        <div className="text-sm text-yellow-700">
+                          <p>Items: {order.items?.length || 0}</p>
+                          <p>Total: Rs. {order.total || "0.00"}</p>
+                          <p>Status: <span className="capitalize">{order.status}</span></p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               ))
             )}

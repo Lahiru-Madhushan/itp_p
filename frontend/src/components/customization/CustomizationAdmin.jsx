@@ -1,391 +1,390 @@
-import React, { useEffect, useState } from "react";
-import {
-  Search,
-  Download,
-  Trash2,
-  Filter,
-  Shirt,
-  Upload,
-} from "lucide-react";
-import { generateCustomizationPDF } from "./customizationPDF";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { Plus, Trash2, Save, Edit, X, Search, Package, Settings } from "lucide-react";
 
-const CustomizationManagement = () => {
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
+const API = import.meta.env.VITE_API_BASE_URL || "http://localhost:8070";
+
+export default function AdminCustomizationPage() {
+  const [products, setProducts] = useState([]);
+  const [customizations, setCustomizations] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [typeFilter, setTypeFilter] = useState("all");
+  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 🔹 Editing states
-  const [editingOrder, setEditingOrder] = useState(null);
-  const [editForm, setEditForm] = useState({});
-  const [previewUrl, setPreviewUrl] = useState(null);
+  const [formData, setFormData] = useState({
+    productId: "",
+    options: [],
+  });
+  const [editingId, setEditingId] = useState(null);
 
   useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        const res = await fetch("http://localhost:8070/customization/all", {
-          credentials: "include",
-        });
-        const data = await res.json();
-        setOrders(data.customizations || data); // handle both formats
-      } catch (error) {
-        console.error("Error fetching customizations:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchOrders();
+    fetchData();
   }, []);
 
-  // 🔹 Search + filter
-  const filteredOrders = orders.filter((o) => {
-    const matchesSearch =
-      (o.user?.firstName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (o.user?.lastName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (o.user?.email || "").toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType =
-      typeFilter === "all" ||
-      (o.clothingType || "").toLowerCase() === typeFilter.toLowerCase();
-    return matchesSearch && matchesType;
-  });
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [productsRes, customizationsRes] = await Promise.all([
+        axios.get(`${API}/product/allProducts`),
+        axios.get(`${API}/customization/all`)
+      ]);
+      setProducts(productsRes.data);
+      setCustomizations(customizationsRes.data);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      alert("Error loading data ❌");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCustomizations = async () => {
+    const res = await axios.get(`${API}/customization/all`);
+    setCustomizations(res.data);
+  };
+
+  const addOption = () => {
+    setFormData({
+      ...formData,
+      options: [
+        ...formData.options,
+        { name: "", type: "select", values: [{ label: "", price: 0 }] },
+      ],
+    });
+  };
+
+  const removeOption = (index) => {
+    const newOptions = formData.options.filter((_, i) => i !== index);
+    setFormData({ ...formData, options: newOptions });
+  };
+
+  const removeValue = (optionIndex, valueIndex) => {
+    const newOptions = [...formData.options];
+    newOptions[optionIndex].values = newOptions[optionIndex].values.filter((_, i) => i !== valueIndex);
+    setFormData({ ...formData, options: newOptions });
+  };
+
+  const addValueToOption = (index) => {
+    const newOptions = [...formData.options];
+    newOptions[index].values.push({ label: "", price: 0 });
+    setFormData({ ...formData, options: newOptions });
+  };
+
+  const handleOptionChange = (index, field, value) => {
+    const newOptions = [...formData.options];
+    newOptions[index][field] = value;
+    setFormData({ ...formData, options: newOptions });
+  };
+
+  const handleValueChange = (optionIndex, valueIndex, field, value) => {
+    const newOptions = [...formData.options];
+    newOptions[optionIndex].values[valueIndex][field] = field === "price" ? Number(value) : value;
+    setFormData({ ...formData, options: newOptions });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    const sanitized = {
+      ...formData,
+      options: formData.options
+        .filter((o) => o.name.trim() !== "")
+        .map((o) => ({
+          ...o,
+          values: o.values.filter((v) => v.label.trim() !== ""),
+        })),
+    };
+
+    try {
+      if (editingId) {
+        await axios.put(`${API}/customization/update/${editingId}`, sanitized);
+        alert("Customization updated successfully ✅");
+      } else {
+        await axios.post(`${API}/customization/add`, sanitized);
+        alert("Customization added successfully ✅");
+      }
+      resetForm();
+      fetchCustomizations();
+    } catch (err) {
+      console.error("Save error:", err);
+      alert("Error saving customization ❌");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({ productId: "", options: [] });
+    setEditingId(null);
+  };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this order?")) return;
+    if (!window.confirm("Are you sure you want to delete this customization?")) return;
     try {
-      await fetch(`http://localhost:8070/customization/${id}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      setOrders((prev) => prev.filter((o) => o._id !== id));
+      await axios.delete(`${API}/customization/delete/${id}`);
+      fetchCustomizations();
     } catch (error) {
-      console.error("Error deleting customization:", error);
+      alert("Error deleting customization ❌");
     }
   };
 
-  const handleStatusChange = async (id, status) => {
-    try {
-      await fetch(`http://localhost:8070/customization/status/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ status }),
-      });
-      setOrders((prev) =>
-        prev.map((o) => (o._id === id ? { ...o, status } : o))
-      );
-    } catch (error) {
-      console.error("Error updating status:", error);
-    }
-  };
-
-  const handleDownloadPDF = async (order) => {
-    const doc = await generateCustomizationPDF(order);
-    doc.save(`Order_${order._id}.pdf`);
-  };
-
-  // 🔹 Open modal for editing
-  const handleEdit = (order) => {
-    setEditingOrder(order);
-    setEditForm({
-      fabric: order.fabric || "",
-      fabricColor: order.fabricColor || "",
-      size: order.size || "",
-      measurements: { ...order.measurements },
-      designImage: null,
-      status: order.status || "Pending",
+  const handleEdit = (customization) => {
+    setFormData({
+      productId: customization.productId?._id || "",
+      options: customization.options,
     });
-    setPreviewUrl(
-      order.designImage
-        ? `http://localhost:8070/uploads/customizations/${order.designImage}`
-        : null
-    );
+    setEditingId(customization._id);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // 🔹 Handle input changes
-  const handleEditChange = (e) => {
-    const { name, value, files } = e.target;
-    if (files) {
-      const file = files[0];
-      setEditForm((prev) => ({ ...prev, designImage: file }));
-      setPreviewUrl(URL.createObjectURL(file));
-    } else if (name.startsWith("measurements.")) {
-      const key = name.split(".")[1];
-      setEditForm((prev) => ({
-        ...prev,
-        measurements: { ...prev.measurements, [key]: value },
-      }));
-    } else {
-      setEditForm((prev) => ({ ...prev, [name]: value }));
-    }
-  };
-
-  // 🔹 Save updates
-  const handleUpdate = async () => {
-    try {
-      const formData = new FormData();
-      formData.append("fabric", editForm.fabric);
-      formData.append("fabricColor", editForm.fabricColor);
-      formData.append("size", editForm.size);
-      formData.append("status", editForm.status);
-
-      Object.entries(editForm.measurements || {}).forEach(([key, val]) =>
-        formData.append(`measurements[${key}]`, val)
-      );
-      if (editForm.designImage) {
-        formData.append("designImage", editForm.designImage);
-      }
-
-      await fetch(`http://localhost:8070/customization/${editingOrder._id}`, {
-        method: "PUT",
-        credentials: "include",
-        body: formData,
-      });
-
-      setOrders((prev) =>
-        prev.map((o) =>
-          o._id === editingOrder._id ? { ...o, ...editForm } : o
-        )
-      );
-
-      setEditingOrder(null);
-    } catch (error) {
-      console.error("Error updating customization:", error);
-    }
-  };
-
-  const measurementFields = {
-    Shirt: ["chest", "shoulder", "sleeveLength", "collar"],
-    Trouser: ["waist", "hip", "thigh", "inseam", "outseam"],
-    Frock: ["bust", "waist", "hip", "frockLength", "sleeveLength"],
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600 text-lg">Loading orders...</p>
-        </div>
-      </div>
-    );
-  }
+  const filteredCustomizations = customizations.filter((c) =>
+    c.productId?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* 🔹 Header */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-6 flex justify-between items-center">
-          <div className="flex items-center space-x-3">
-            <Shirt className="h-8 w-8 text-blue-600" />
-            <div>
-              <h1 className="text-3xl font-bold text-gray-800">
-                Customization Management
-              </h1>
-              <p className="text-gray-600">
-                Manage and track all customer clothing orders
-              </p>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="bg-white rounded-xl shadow-sm p-6 mb-6 border border-gray-200">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Settings className="w-6 h-6 text-blue-600" />
             </div>
+            <h1 className="text-2xl font-bold text-gray-800">Customization Management</h1>
           </div>
+          <p className="text-gray-600">Manage product customizations and options</p>
         </div>
 
-        {/* 🔹 Search & Filter */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div className="flex flex-col sm:flex-row gap-4 flex-1">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-              <input
-                type="text"
-                placeholder="Search by name or email..."
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all duration-200"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <div className="relative">
-              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-              <select
-                className="pl-10 pr-8 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all duration-200 appearance-none bg-white min-w-[140px]"
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-              >
-                <option value="all">All Types</option>
-                <option value="Shirt">Shirt</option>
-                <option value="Trouser">Trouser</option>
-                <option value="Frock">Frock</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* 🔹 Orders Table */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-6">
-          <div className="overflow-x-auto">
-            <table className="min-w-[900px] max-w-6xl mx-auto table-auto border-collapse text-sm">
-              <thead className="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
-                <tr>
-                  <th className="px-4 py-3">Name</th>
-                  <th className="px-4 py-3">Email</th>
-                  <th className="px-4 py-3">Contact</th>
-                  <th className="px-4 py-3">Clothing Type</th>
-                  <th className="px-4 py-3">Size</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3 text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {filteredOrders.map((o, index) => (
-                  <tr
-                    key={o._id}
-                    className={`${
-                      index % 2 === 0 ? "bg-white" : "bg-gray-50"
-                    } hover:bg-gray-100`}
-                  >
-                    <td className="px-4 py-3">
-                      {o.user?.firstName} {o.user?.lastName}
-                    </td>
-                    <td className="px-4 py-3">{o.user?.email}</td>
-                    <td className="px-4 py-3">{o.user?.phoneNumber}</td>
-                    <td className="px-4 py-3">{o.clothingType}</td>
-                    <td className="px-4 py-3">{o.size}</td>
-                    <td className="px-4 py-3">
-                      <select
-                        value={o.status}
-                        onChange={(e) =>
-                          handleStatusChange(o._id, e.target.value)
-                        }
-                        className="border p-1 rounded-lg"
-                      >
-                        <option value="Pending">Pending</option>
-                        <option value="Accepted">Accepted</option>
-                        <option value="Finished">Finished</option>
-                      </select>
-                    </td>
-                    <td className="px-4 py-3 flex justify-center gap-2">
-                      <button
-                        onClick={() => handleDownloadPDF(o)}
-                        className="px-3 py-2 bg-green-500 text-white rounded-md text-xs"
-                      >
-                        <Download className="h-4 w-4 inline mr-1" /> PDF
-                      </button>
-                      <button
-                        onClick={() => handleEdit(o)}
-                        className="px-3 py-2 bg-blue-500 text-white rounded-md text-xs"
-                      >
-                        ✏️ Update
-                      </button>
-                      <button
-                        onClick={() => handleDelete(o._id)}
-                        className="px-3 py-2 bg-red-500 text-white rounded-md text-xs"
-                      >
-                        <Trash2 className="h-4 w-4 inline mr-1" /> Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {filteredOrders.length === 0 && (
-              <div className="text-center py-12 text-gray-500">
-                No orders found
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - Form */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Package className="w-5 h-5 text-green-600" />
+                <h2 className="text-lg font-semibold text-gray-800">
+                  {editingId ? "Edit Customization" : "Add New Customization"}
+                </h2>
               </div>
-            )}
+
+              <form onSubmit={handleSubmit}>
+                {/* Product Selection */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select Product *
+                  </label>
+                  <select
+                    value={formData.productId}
+                    onChange={(e) => setFormData({ ...formData, productId: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    required
+                  >
+                    <option value="">Choose a product...</option>
+                    {products.map((p) => (
+                      <option key={p._id} value={p._id}>
+                        {p.name} ({p.category})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Options Section */}
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Customization Options
+                    </label>
+                    <button
+                      type="button"
+                      onClick={addOption}
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      <Plus size={16} />
+                      Add Option
+                    </button>
+                  </div>
+
+                  {formData.options.length === 0 && (
+                    <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
+                      <Package className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                      <p className="text-gray-500">No options added yet</p>
+                      <p className="text-sm text-gray-400">Click "Add Option" to get started</p>
+                    </div>
+                  )}
+
+                  {formData.options.map((opt, optIndex) => (
+                    <div key={optIndex} className="border border-gray-200 rounded-lg p-4 mb-4 bg-gray-50/50">
+                      <div className="flex items-start justify-between mb-3">
+                        <input
+                          type="text"
+                          placeholder="Option name (e.g., Fabric Type, Color)"
+                          className="flex-1 border border-gray-300 rounded-lg p-3 mr-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          value={opt.name}
+                          onChange={(e) => handleOptionChange(optIndex, "name", e.target.value)}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeOption(optIndex)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+
+                      {/* Values */}
+                      <div className="space-y-2">
+                        {opt.values.map((val, valIndex) => (
+                          <div key={valIndex} className="flex gap-2 items-start">
+                            <input
+                              type="text"
+                              placeholder="Value label (e.g., Cotton, Silk)"
+                              className="flex-1 border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              value={val.label}
+                              onChange={(e) =>
+                                handleValueChange(optIndex, valIndex, "label", e.target.value)
+                              }
+                            />
+                            <div className="flex gap-2">
+                              <div className="relative">
+                                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                                  $
+                                </span>
+                                <input
+                                  type="number"
+                                  placeholder="0.00"
+                                  className="w-24 border border-gray-300 rounded-lg p-2 pl-7 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  value={val.price}
+                                  onChange={(e) =>
+                                    handleValueChange(optIndex, valIndex, "price", e.target.value)
+                                  }
+                                  min="0"
+                                  step="0.01"
+                                />
+                              </div>
+                              {opt.values.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => removeValue(optIndex, valIndex)}
+                                  className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                >
+                                  <X size={16} />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => addValueToOption(optIndex)}
+                        className="mt-3 flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                      >
+                        <Plus size={14} />
+                        Add Value
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-4 border-t border-gray-200">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <Save size={16} />
+                    {isSubmitting ? "Saving..." : editingId ? "Update Customization" : "Save Customization"}
+                  </button>
+                  {editingId && (
+                    <button
+                      type="button"
+                      onClick={resetForm}
+                      className="flex items-center gap-2 px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                    >
+                      <X size={16} />
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
 
-        {/* 🔹 Edit Modal */}
-        {editingOrder && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-            <div className="bg-white p-6 rounded-lg shadow-lg w-[500px] max-h-[90vh] overflow-y-auto">
-              <h2 className="text-lg font-bold mb-4">Update Order</h2>
+          {/* Right Column - List */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Search className="w-5 h-5 text-gray-600" />
+                <h2 className="text-lg font-semibold text-gray-800">Existing Customizations</h2>
+              </div>
 
-              <input
-                type="text"
-                name="fabric"
-                placeholder="Fabric"
-                value={editForm.fabric}
-                onChange={handleEditChange}
-                className="w-full mb-3 p-2 border rounded"
-              />
-              <input
-                type="text"
-                name="fabricColor"
-                placeholder="Fabric Color"
-                value={editForm.fabricColor}
-                onChange={handleEditChange}
-                className="w-full mb-3 p-2 border rounded"
-              />
-              <input
-                type="text"
-                name="size"
-                placeholder="Size"
-                value={editForm.size}
-                onChange={handleEditChange}
-                className="w-full mb-3 p-2 border rounded"
-              />
-
-              {/* Measurements */}
-              {measurementFields[editingOrder.clothingType]?.map((field) => (
+              {/* Search */}
+              <div className="mb-4">
                 <input
-                  key={field}
                   type="text"
-                  name={`measurements.${field}`}
-                  placeholder={field}
-                  value={editForm.measurements?.[field] || ""}
-                  onChange={handleEditChange}
-                  className="w-full mb-3 p-2 border rounded"
+                  placeholder="Search products..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
-              ))}
+              </div>
 
-              {/* Upload Design */}
-              <div className="mb-3">
-                <label className="block mb-2 font-semibold">Upload Design</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleEditChange}
-                  className="mb-2"
-                />
-                {previewUrl && (
-                  <img
-                    src={previewUrl}
-                    alt="Preview"
-                    className="w-32 h-32 object-cover border rounded"
-                  />
+              {/* Customizations List */}
+              <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                {loading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="text-gray-500 mt-2">Loading...</p>
+                  </div>
+                ) : filteredCustomizations.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <Package className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                    <p>No customizations found</p>
+                  </div>
+                ) : (
+                  filteredCustomizations.map((c) => (
+                    <div key={c._id} className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="font-semibold text-gray-800">{c.productId?.name}</h3>
+                        <div className="flex gap-1">
+                          <button
+                            onClick={() => handleEdit(c)}
+                            className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                            title="Edit"
+                          >
+                            <Edit size={14} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(c._id)}
+                            className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        {c.options.map((o, i) => (
+                          <div key={i} className="text-sm text-gray-600">
+                            <span className="font-medium">{o.name}:</span>{" "}
+                            {o.values.map((v, vIndex) => (
+                              <span key={vIndex}>
+                                {v.label} (+${v.price}){vIndex < o.values.length - 1 ? ", " : ""}
+                              </span>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))
                 )}
               </div>
-
-              {/* Status */}
-              <select
-                name="status"
-                value={editForm.status}
-                onChange={handleEditChange}
-                className="w-full mb-4 p-2 border rounded"
-              >
-                <option value="Pending">Pending</option>
-                <option value="Accepted">Accepted</option>
-                <option value="Finished">Finished</option>
-              </select>
-
-              <div className="flex justify-end gap-2">
-                <button
-                  onClick={() => setEditingOrder(null)}
-                  className="px-4 py-2 bg-gray-300 rounded"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleUpdate}
-                  className="px-4 py-2 bg-blue-500 text-white rounded"
-                >
-                  Save
-                </button>
-              </div>
             </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
-};
-
-export default CustomizationManagement;
+}
