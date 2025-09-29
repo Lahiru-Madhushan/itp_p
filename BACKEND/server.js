@@ -5,6 +5,7 @@ import bodyParser from "body-parser";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import path from "path";
+import { handleStripeWebhook } from "./controllers/paymentManagement/paymentController.js";
 import { fileURLToPath } from "url";
 
 
@@ -22,6 +23,12 @@ app.use(cors({
   origin: process.env.CLIENT_URL, // http://localhost:3000
   credentials: true
 }));
+
+app.post(
+  "/api/payments/webhook",
+  express.raw({ type: "application/json" }),
+  handleStripeWebhook
+);
 
 app.use(bodyParser.json());
 app.use(express.json());
@@ -62,8 +69,11 @@ import chart from "./routes/piechart/feedback.js"
 app.use("/Chart",chart)
 
 // Controllers
-import { handleStripeWebhook } from "./controllers/paymentManagement/paymentController.js";
+
 import paymentRoutes from "./routes/paymentManagement/payment.js";
 app.use("/api/payments", paymentRoutes);
+
+import Order from "./routes/orderManagement/orderRoutes.js";
+app.use("/order", Order);
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

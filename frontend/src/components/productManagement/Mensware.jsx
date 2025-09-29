@@ -1,3 +1,4 @@
+// = FILE: frontend/src/components/productManagement/MenswarePage.jsx
 import React, { useEffect, useState } from "react";
 import {
   ShoppingCart,
@@ -13,8 +14,11 @@ import {
   Shield,
   RotateCcw,
   X,
+  Check,
 } from "lucide-react";
 import Footer from "../Footer";
+
+const API = import.meta.env.VITE_API_BASE_URL || "http://localhost:8070";
 
 export default function MenswarePage() {
   const [products, setProducts] = useState([]);
@@ -34,9 +38,15 @@ export default function MenswarePage() {
   const [modalImageIndex, setModalImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
 
-  // Fetch Mensware products
+  // Customization state
+  const [customizations, setCustomizations] = useState([]);
+  const [selectedOptions, setSelectedOptions] = useState({});
+  const [enabledOptions, setEnabledOptions] = useState({});
+  const [finalPrice, setFinalPrice] = useState(0);
+
+  // ✅ Fetch Mensware products
   useEffect(() => {
-    fetch("http://localhost:8070/product/allProducts")
+    fetch(`${API}/product/allProducts`)
       .then((res) => res.json())
       .then((data) => {
         const filtered = data.filter((p) => p.category === "Mensware");
@@ -55,24 +65,20 @@ export default function MenswarePage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Apply filters and search
+  // ✅ Apply filters + search
   useEffect(() => {
     let result = [...products];
-
     if (searchTerm) {
       result = result.filter(
-        (product) =>
-          product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          product.description.toLowerCase().includes(searchTerm.toLowerCase())
+        (p) =>
+          p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          p.description.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-
     if (filterBy === "inStock") {
       result = result.filter((p) => p.stockQuantity > 0);
     } else if (filterBy === "lowStock") {
-      result = result.filter(
-        (p) => p.stockQuantity > 0 && p.stockQuantity <= 5
-      );
+      result = result.filter((p) => p.stockQuantity > 0 && p.stockQuantity <= 5);
     }
 
     result.sort((a, b) => {
@@ -91,7 +97,7 @@ export default function MenswarePage() {
     setFilteredProducts(result);
   }, [products, searchTerm, filterBy, sortBy]);
 
-  // Auto image slideshow for cards
+  // ✅ Auto slideshow
   useEffect(() => {
     const interval = setInterval(() => {
       setImageIndexes((prev) => {
@@ -131,34 +137,101 @@ export default function MenswarePage() {
     );
   };
 
-  // Add to cart with quantity
+  // ✅ Open modal → fetch specific customizations
+  const openProductModal = async (product) => {
+    setSelectedProduct(product);
+    setModalImageIndex(0);
+    setQuantity(1);
+    setSelectedOptions({});
+    setEnabledOptions({});
+    setFinalPrice(product.price);
+    setCustomizations([]);
+
+    try {
+      const res = await fetch(`${API}/customization/product/${product._id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setCustomizations(data); // ✅ use directly
+      }
+    } catch (err) {
+      console.error("Customization fetch error:", err);
+    }
+  };
+
+  // ✅ Price calculation
+  const recalcPrice = (base, options, enabled) => {
+    let extra = 0;
+    Object.keys(enabled).forEach((key) => {
+      if (enabled[key]) {
+        const val = options[key];
+        if (val?.price) extra += Number(val.price);
+      }
+    });
+    setFinalPrice(base + extra);
+  };
+
+  const handleOptionChange = (optionName, value) => {
+    const updated = { ...selectedOptions, [optionName]: value };
+    setSelectedOptions(updated);
+    recalcPrice(selectedProduct.price, updated, enabledOptions);
+  };
+
+  const toggleOptionEnable = (optionName, enabled) => {
+    const updatedEnabled = { ...enabledOptions, [optionName]: enabled };
+    setEnabledOptions(updatedEnabled);
+    
+    // If disabling, remove from selected options
+    if (!enabled) {
+      const updatedSelected = { ...selectedOptions };
+      delete updatedSelected[optionName];
+      setSelectedOptions(updatedSelected);
+      recalcPrice(selectedProduct.price, updatedSelected, updatedEnabled);
+    } else {
+      recalcPrice(selectedProduct.price, selectedOptions, updatedEnabled);
+    }
+  };
+
+  // ✅ Add to cart
   const handleAddToCart = async (id, size = "M") => {
     try {
-      const res = await fetch("http://localhost:8070/product/addToCart", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId: id, quantity }),
-      });
-
-      const result = await res.json();
-      if (!result.success) {
-        alert(result.message || "Error adding to cart");
-        return;
-      }
-
       const savedCart = JSON.parse(localStorage.getItem("cart")) || [];
-      const existingItem = savedCart.find(
-        (item) => item._id === result.product._id && item.size === size
+      
+      // Check if item with same customizations already exists
+      const existingItemIndex = savedCart.findIndex(
+        item => 
+          item._id === selectedProduct._id && 
+          item.size === size &&
+          JSON.stringify(item.customizations) === JSON.stringify(
+            Object.keys(enabledOptions)
+              .filter((k) => enabledOptions[k])
+              .reduce((acc, k) => {
+                acc[k] = selectedOptions[k];
+                return acc;
+              }, {})
+          )
       );
 
-      if (existingItem) {
-        existingItem.quantity = (existingItem.quantity || 1) + quantity;
+      if (existingItemIndex !== -1) {
+        // Update quantity if same item exists
+        savedCart[existingItemIndex].quantity += quantity;
       } else {
-        savedCart.push({ ...result.product, quantity, size });
+        // Add new item
+        savedCart.push({
+          ...selectedProduct,
+          quantity,
+          size,
+          customizations: Object.keys(enabledOptions)
+            .filter((k) => enabledOptions[k])
+            .reduce((acc, k) => {
+              acc[k] = selectedOptions[k];
+              return acc;
+            }, {}),
+          finalPrice,
+        });
       }
 
       localStorage.setItem("cart", JSON.stringify(savedCart));
-      alert(`✓ Added ${quantity} item(s) to cart (Size: ${size})!`);
+      alert(`✓ Added ${quantity} item(s) to cart with customization!`);
       window.dispatchEvent(new Event("storage"));
     } catch (err) {
       console.error("Cart error:", err);
@@ -172,7 +245,7 @@ export default function MenswarePage() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-4 border-yellow-400 border-t-transparent mx-auto mb-4"></div>
           <p className="text-xl text-gray-700 font-medium">
-            Loading Mensware Collection...
+            Loading Men's Collection...
           </p>
         </div>
       </div>
@@ -188,14 +261,13 @@ export default function MenswarePage() {
             Men's Collection
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Discover our premium collection of men's fashion essentials crafted
-            with quality and style in mind
+            Discover our premium collection of men's fashion essentials with premium customization options
           </p>
         </div>
 
         {/* Controls */}
         <div className="mb-8 space-y-4">
-          {/* Search Bar */}
+          {/* Search */}
           <div className="relative max-w-md mx-auto">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
@@ -207,7 +279,7 @@ export default function MenswarePage() {
             />
           </div>
 
-          {/* Filters and View Controls */}
+          {/* Filters + View */}
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <button
@@ -238,7 +310,7 @@ export default function MenswarePage() {
                 onClick={() => setViewMode("grid")}
                 className={`p-2 rounded ${
                   viewMode === "grid"
-                    ? "bg-yellow-400 text-black"
+                    ? "bg-yellow-400 text-white"
                     : "bg-gray-200 text-gray-600"
                 }`}
               >
@@ -248,7 +320,7 @@ export default function MenswarePage() {
                 onClick={() => setViewMode("list")}
                 className={`p-2 rounded ${
                   viewMode === "list"
-                    ? "bg-yellow-400 text-black"
+                    ? "bg-yellow-400 text-white"
                     : "bg-gray-200 text-gray-600"
                 }`}
               >
@@ -290,7 +362,7 @@ export default function MenswarePage() {
           )}
         </div>
 
-        {/* Products Grid/List */}
+        {/* Products */}
         {filteredProducts.length === 0 ? (
           <div className="text-center py-20">
             <Package className="w-24 h-24 text-yellow-400 mx-auto mb-6" />
@@ -318,17 +390,13 @@ export default function MenswarePage() {
               return (
                 <div
                   key={product._id}
-                  onClick={() => {
-                    setSelectedProduct(product);
-                    setModalImageIndex(0);
-                    setQuantity(1);
-                  }}
+                  onClick={() => openProductModal(product)}
                   className="cursor-pointer group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 overflow-hidden border border-gray-100 hover:border-yellow-300"
                 >
                   <div className="relative bg-gray-50 h-64 flex items-center justify-center">
                     {product.images?.length > 0 ? (
                       <img
-                        src={`http://localhost:8070${product.images[currentIndex]}`}
+                        src={`${API}${product.images[currentIndex]}`}
                         alt={product.name}
                         className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
                       />
@@ -393,13 +461,16 @@ export default function MenswarePage() {
         </div>
       </div>
 
-      {/* Product Modal */}
+      {/* Modal with customization */}
       {selectedProduct && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 animate-fadeIn">
-          <div className="bg-white rounded-2xl max-w-4xl w-full p-6 relative shadow-2xl">
+          <div className="bg-white rounded-2xl max-w-4xl w-full p-6 relative shadow-2xl max-h-[90vh] overflow-y-auto">
             <button
-              onClick={() => setSelectedProduct(null)}
-              className="absolute top-4 right-4 p-2 rounded-full bg-gray-100 hover:bg-gray-200"
+              onClick={() => {
+                setSelectedProduct(null);
+                setCustomizations([]);
+              }}
+              className="absolute top-4 right-4 p-2 rounded-full bg-gray-100 hover:bg-gray-200 z-10"
             >
               <X className="w-5 h-5 text-gray-700" />
             </button>
@@ -410,16 +481,16 @@ export default function MenswarePage() {
                 {selectedProduct.images?.length > 0 ? (
                   <>
                     <img
-                      src={`http://localhost:8070${selectedProduct.images[modalImageIndex]}`}
+                      src={`${API}${selectedProduct.images[modalImageIndex]}`}
                       alt={selectedProduct.name}
                       className="w-full h-full object-contain rounded-lg"
                     />
-                    {/* Thumbnail previews */}
+                    {/* Thumbnails */}
                     <div className="flex gap-2 mt-3 overflow-x-auto">
                       {selectedProduct.images.map((img, idx) => (
                         <img
                           key={idx}
-                          src={`http://localhost:8070${img}`}
+                          src={`${API}${img}`}
                           alt="thumb"
                           onClick={() => setModalImageIndex(idx)}
                           className={`h-16 w-16 object-contain rounded-lg border cursor-pointer ${
@@ -453,19 +524,95 @@ export default function MenswarePage() {
                 )}
               </div>
 
-              {/* Product Info */}
+              {/* Product Info & Customization */}
               <div className="space-y-4">
                 <h2 className="text-3xl font-bold text-gray-900">
                   {selectedProduct.name}
                 </h2>
                 <p className="text-gray-600">{selectedProduct.description}</p>
-                <div className="text-2xl font-bold text-yellow-600">
-                  Rs. {selectedProduct.price?.toLocaleString()}
+                
+                {/* Base Price */}
+                <div className="text-xl font-bold text-gray-700">
+                  Base Price: Rs. {selectedProduct.price?.toLocaleString()}
                 </div>
+
+                {/* Stock Info */}
                 <p className="text-sm text-gray-700">
                   Stock: {selectedProduct.stockQuantity} | Size:{" "}
                   {selectedProduct.size || "M"}
                 </p>
+
+                {/* ✅ Customization Options */}
+                {customizations.length > 0 && (
+                  <div className="space-y-4 border-t pt-4">
+                    <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                      <Check className="w-5 h-5 text-green-500" />
+                      Customization Options
+                    </h3>
+                    {customizations.flatMap((c) =>
+                      c.options.map((opt) => (
+                        <div key={opt._id} className="border border-gray-200 rounded-xl p-4 bg-gray-50">
+                          <label className="flex items-center gap-3 font-medium text-gray-900 cursor-pointer">
+                            <div className="relative">
+                              <input
+                                type="checkbox"
+                                checked={enabledOptions[opt.name] || false}
+                                onChange={(e) =>
+                                  toggleOptionEnable(opt.name, e.target.checked)
+                                }
+                                className="w-5 h-5 rounded border-gray-300 text-yellow-600 focus:ring-yellow-500"
+                              />
+                            </div>
+                            <span className="text-lg">{opt.name}</span>
+                            <span className="text-sm text-gray-500 ml-auto">
+                              Optional
+                            </span>
+                          </label>
+
+                          {enabledOptions[opt.name] && (
+                            <div className="mt-3 space-y-2">
+                              <label className="block text-sm font-medium text-gray-700">
+                                Select {opt.name}:
+                              </label>
+                              <select
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-yellow-400 outline-none"
+                                value={selectedOptions[opt.name]?.label || ""}
+                                onChange={(e) => {
+                                  const value = opt.values.find(
+                                    (v) => v.label === e.target.value
+                                  );
+                                  handleOptionChange(opt.name, value);
+                                }}
+                              >
+                                <option value="">Choose an option...</option>
+                                {opt.values.map((v) => (
+                                  <option key={v.label} value={v.label}>
+                                    {v.label} (+Rs. {v.price})
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+
+                {/* ✅ Final Price Display */}
+                <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl p-4 text-white">
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg font-semibold">Final Price:</span>
+                    <span className="text-2xl font-bold">
+                      Rs. {finalPrice?.toLocaleString()}
+                    </span>
+                  </div>
+                  {finalPrice > selectedProduct.price && (
+                    <div className="text-sm text-yellow-100 mt-1">
+                      Includes customization charges
+                    </div>
+                  )}
+                </div>
 
                 {/* Quantity Selector */}
                 <div className="flex items-center gap-3">
@@ -489,7 +636,7 @@ export default function MenswarePage() {
                   disabled={selectedProduct.stockQuantity <= 0}
                   className={`w-full py-3 px-6 rounded-xl font-semibold text-lg transition-all duration-300 flex items-center justify-center gap-2 ${
                     selectedProduct.stockQuantity > 0
-                      ? "bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
+                      ? "bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
                       : "bg-gray-300 text-gray-500 cursor-not-allowed"
                   }`}
                 >
