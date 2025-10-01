@@ -8,9 +8,10 @@ import {
   X,
   Download,
   MinusCircle,
+  PlusCircle,   // ➕ new icon for Add
 } from "lucide-react";
 import axiosInstance from "../../lib/axios";
-import { generateRawPDF } from "./rawPdf"; // utility for PDF
+import { generateRawPDF } from "./rawPdf";
 
 export default function RawManagement() {
   const [raw, setRaw] = useState([]);
@@ -20,7 +21,8 @@ export default function RawManagement() {
   const [editingRaw, setEditingRaw] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [usageModal, setUsageModal] = useState(false);
-  const [usageValue, setUsageValue] = useState("");
+  const [addModal, setAddModal] = useState(false); // ➕ add modal
+  const [value, setValue] = useState("");          // shared input
   const [selectedRaw, setSelectedRaw] = useState(null);
 
   const [formData, setFormData] = useState({
@@ -45,6 +47,7 @@ export default function RawManagement() {
       .catch((err) => console.error("Error fetching raw materials:", err));
   };
 
+  // Delete record
   const handleDelete = (id) => {
     if (!window.confirm("Are you sure you want to delete this record?")) return;
     axiosInstance
@@ -59,6 +62,7 @@ export default function RawManagement() {
       });
   };
 
+  // Open modals
   const openAddModal = () => {
     setEditingRaw(null);
     setFormData({
@@ -87,7 +91,19 @@ export default function RawManagement() {
     setModalOpen(true);
   };
 
-  // ✅ Auto-calc total price
+  const openUsageModal = (item) => {
+    setSelectedRaw(item);
+    setValue("");
+    setUsageModal(true);
+  };
+
+  const openAddQtyModal = (item) => {
+    setSelectedRaw(item);
+    setValue("");
+    setAddModal(true);
+  };
+
+  // Auto-calc total price
   useEffect(() => {
     if (formData.quantity && formData.unitPrice) {
       const total = Number(formData.quantity) * Number(formData.unitPrice);
@@ -95,9 +111,9 @@ export default function RawManagement() {
     }
   }, [formData.quantity, formData.unitPrice]);
 
+  // Submit add/edit
   const handleFormSubmit = (e) => {
     e.preventDefault();
-
     if (editingRaw) {
       axiosInstance
         .put(`/raw/update/${editingRaw._id}`, formData)
@@ -125,31 +141,24 @@ export default function RawManagement() {
     }
   };
 
+  // Format price
   const formatPrice = (p) => {
     const n = Number(p);
     if (Number.isNaN(n)) return p;
     return `Rs. ${n.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
   };
 
-  // ✅ Handle material usage
-  const openUsageModal = (item) => {
-    setSelectedRaw(item);
-    setUsageValue("");
-    setUsageModal(true);
-  };
-
+  // Handle stock usage
   const handleUseMaterial = () => {
-    if (!usageValue || Number(usageValue) <= 0) {
+    if (!value || Number(value) <= 0) {
       alert("⚠️ Enter a valid usage amount.");
       return;
     }
-    if (Number(usageValue) > selectedRaw.quantity) {
+    if (Number(value) > selectedRaw.quantity) {
       alert("⚠️ Cannot use more than available stock.");
       return;
     }
-
-    const updatedQuantity = selectedRaw.quantity - Number(usageValue);
-
+    const updatedQuantity = selectedRaw.quantity - Number(value);
     axiosInstance
       .put(`/raw/update/${selectedRaw._id}`, {
         ...selectedRaw,
@@ -166,11 +175,33 @@ export default function RawManagement() {
       });
   };
 
-  // 🔎 Apply filters
+  // Handle add stock
+  const handleAddMaterial = () => {
+    if (!value || Number(value) <= 0) {
+      alert("⚠️ Enter a valid quantity.");
+      return;
+    }
+    const updatedQuantity = selectedRaw.quantity + Number(value);
+    axiosInstance
+      .put(`/raw/update/${selectedRaw._id}`, {
+        ...selectedRaw,
+        quantity: updatedQuantity,
+      })
+      .then(() => {
+        alert("✅ Stock increased successfully!");
+        setAddModal(false);
+        fetchData();
+      })
+      .catch((err) => {
+        console.error("Add error:", err);
+        alert("❌ Error increasing stock");
+      });
+  };
+
+  // Filters
   const filtered = raw.filter((r) => {
     const t = `${r.name} ${r.suppliers}`.toLowerCase();
     const okText = t.includes(search.toLowerCase());
-
     const createdAt = r.createdAt ? new Date(r.createdAt) : null;
     const okYear =
       yearFilter === "all" ||
@@ -178,7 +209,6 @@ export default function RawManagement() {
     const okMonth =
       monthFilter === "all" ||
       (createdAt && (createdAt.getMonth() + 1).toString() === monthFilter);
-
     return okText && okYear && okMonth;
   });
 
@@ -215,6 +245,44 @@ export default function RawManagement() {
               + Add New
             </button>
           </div>
+        </div>
+
+        {/* Search + Filters */}
+        <div className="bg-white rounded-xl shadow-lg p-4 mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+            <input
+              type="text"
+              placeholder="Search by name or supplier..."
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <select
+            className="pl-3 pr-8 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 bg-white"
+            value={yearFilter}
+            onChange={(e) => setYearFilter(e.target.value)}
+          >
+            <option value="all">All Years</option>
+            {uniqueYears.map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
+          </select>
+          <select
+            className="pl-3 pr-8 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 bg-white"
+            value={monthFilter}
+            onChange={(e) => setMonthFilter(e.target.value)}
+          >
+            <option value="all">All Months</option>
+            {[...Array(12)].map((_, i) => (
+              <option key={i + 1} value={i + 1}>
+                {new Date(0, i).toLocaleString("default", { month: "long" })}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Table */}
@@ -288,6 +356,12 @@ export default function RawManagement() {
                           >
                             <MinusCircle className="h-4 w-4 mr-1" /> Use
                           </button>
+                          <button
+                            onClick={() => openAddQtyModal(item)}
+                            className="inline-flex items-center px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded-md text-xs transition"
+                          >
+                            <PlusCircle className="h-4 w-4 mr-1" /> Add 
+                          </button>
                         </td>
                       </tr>
                     );
@@ -320,8 +394,8 @@ export default function RawManagement() {
               <input
                 type="number"
                 placeholder="Enter quantity used"
-                value={usageValue}
-                onChange={(e) => setUsageValue(e.target.value)}
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
                 className="w-full p-3 border border-gray-300 rounded-lg mb-4"
               />
               <div className="flex justify-end gap-3">
@@ -333,6 +407,44 @@ export default function RawManagement() {
                 </button>
                 <button
                   onClick={() => setUsageModal(false)}
+                  className="bg-gray-200 hover:bg-gray-300 px-6 py-2 rounded-lg"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Add Quantity Modal */}
+        {addModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+            <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-6 relative">
+              <button
+                onClick={() => setAddModal(false)}
+                className="absolute top-4 right-4 text-gray-600 hover:text-gray-800"
+              >
+                <X className="h-6 w-6" />
+              </button>
+              <h2 className="text-xl font-bold text-gray-800 mb-4">
+                Add Quantity - {selectedRaw?.name}
+              </h2>
+              <input
+                type="number"
+                placeholder="Enter quantity to add"
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg mb-4"
+              />
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={handleAddMaterial}
+                  className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg"
+                >
+                  Confirm
+                </button>
+                <button
+                  onClick={() => setAddModal(false)}
                   className="bg-gray-200 hover:bg-gray-300 px-6 py-2 rounded-lg"
                 >
                   Cancel
@@ -355,11 +467,12 @@ export default function RawManagement() {
               <h2 className="text-xl font-bold text-gray-800 mb-4">
                 {editingRaw ? "Update Raw Material" : "Add New Raw Material"}
               </h2>
-
               <form className="grid gap-4" onSubmit={handleFormSubmit}>
                 <select
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   required
                 >
@@ -372,10 +485,11 @@ export default function RawManagement() {
                   <option value="Elastic">Elastic</option>
                   <option value="Needles">Needles</option>
                 </select>
-
                 <select
                   value={formData.unit}
-                  onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, unit: e.target.value })
+                  }
                   className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   required
                 >
@@ -384,19 +498,21 @@ export default function RawManagement() {
                   <option value="pcs">Pieces</option>
                   <option value="box">Box</option>
                 </select>
-
                 <input
                   type="number"
                   placeholder="Quantity"
                   value={formData.quantity}
-                  onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, quantity: e.target.value })
+                  }
                   className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   min="1"
                   required
                 />
-
                 <div className="flex items-center border border-gray-300 rounded-lg">
-                  <span className="px-3 text-gray-500 font-semibold text-sm">LKR</span>
+                  <span className="px-3 text-gray-500 font-semibold text-sm">
+                    LKR
+                  </span>
                   <input
                     type="number"
                     placeholder="Unit Price"
@@ -409,9 +525,10 @@ export default function RawManagement() {
                     required
                   />
                 </div>
-
                 <div className="flex items-center border border-gray-300 rounded-lg bg-gray-50">
-                  <span className="px-3 text-gray-500 font-semibold text-sm">Total</span>
+                  <span className="px-3 text-gray-500 font-semibold text-sm">
+                    Total
+                  </span>
                   <input
                     type="number"
                     placeholder="Total Price"
@@ -420,10 +537,11 @@ export default function RawManagement() {
                     className="flex-1 p-3 rounded-r-lg bg-gray-50 text-gray-700 cursor-not-allowed"
                   />
                 </div>
-
                 <select
                   value={formData.suppliers}
-                  onChange={(e) => setFormData({ ...formData, suppliers: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, suppliers: e.target.value })
+                  }
                   className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   required
                 >
@@ -432,10 +550,11 @@ export default function RawManagement() {
                   <option value="UniTex Suppliers">UniTex Suppliers</option>
                   <option value="Elegant Labels Co.">Elegant Labels Co.</option>
                 </select>
-
                 <select
                   value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, status: e.target.value })
+                  }
                   className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   required
                 >
@@ -443,7 +562,6 @@ export default function RawManagement() {
                   <option value="available">Available</option>
                   <option value="unavailable">Unavailable</option>
                 </select>
-
                 <div className="flex justify-end gap-4 mt-2">
                   <button
                     type="submit"
