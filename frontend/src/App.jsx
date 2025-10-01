@@ -21,7 +21,7 @@ import HomePage from "./components/HomePage"
 import ContactPage from "./components/ContactPage";
 import FaqPage from "./components/FaqPage";
 import AboutUsPage from "./components/AboutUsPage";
-import CustomizationForm from "./components/customization/CustomizationForm";
+
 import Feedback from "./components/Feedback/FeedbackPage";
 import Pay from "./components/paymentManagement/pay"
 
@@ -132,7 +132,6 @@ function App() {
          <Route path="/ContactPage" element={<ContactPage />} />
         <Route path="/FaqPage" element={<FaqPage />} />
         <Route path="/AboutUsPage" element={<AboutUsPage />} />
-        <Route path="/customize" element={<CustomizationForm />} />
          <Route path="/Mensware" element={<Mensware />} />
           <Route path="/FemaleWarePage" element={<FemaleWarePage />} />
            <Route path="/KidswarePage" element={<KidswarePage />} />

@@ -21,7 +21,13 @@ const FeedbackSchema = new Schema(
     },
     wouldRecommend: { type: Boolean, default: false },
     images: [{ type: String, trim: true }], // "/uploads/file.jpg"
-        sentiment: { type: String, enum: ["positive", "negative"], default: "positive" } 
+
+    // ✅ Fix: removed forced default "positive"
+    sentiment: { 
+      type: String, 
+      enum: ["positive", "negative"], 
+      default: undefined 
+    },
   },
   { timestamps: true }
 );
