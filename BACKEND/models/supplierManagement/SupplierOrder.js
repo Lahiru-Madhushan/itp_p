@@ -12,3 +12,4 @@ const SupplierOrderSchema = new mongoose.Schema({
 });
 
 export default mongoose.model("SupplierOrder", SupplierOrderSchema);
+ 
