@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { predictWithPython } from "../../src/services/pythonService.js"; // adjust path
 
 const { Schema } = mongoose;
 
@@ -20,11 +21,25 @@ const FeedbackSchema = new Schema(
       default: "Other",
     },
     wouldRecommend: { type: Boolean, default: false },
-    images: [{ type: String, trim: true }], // "/uploads/file.jpg"
-        sentiment: { type: String, enum: ["positive", "negative"], default: "positive" } 
+    images: [{ type: String, trim: true }],
+    sentiment: { type: String, enum: ["positive", "negative", "unknown"], default: "unknown" }
   },
   { timestamps: true }
 );
+
+// 🔥 Pre-save hook to run sentiment analysis
+FeedbackSchema.pre("save", async function (next) {
+  if (!this.sentiment || this.sentiment === "unknown") {
+    try {
+      const result = await predictWithPython(this.detailedFeedback || "");
+      this.sentiment = result || "unknown";
+    } catch (err) {
+      console.error("Sentiment classification failed:", err.message);
+      this.sentiment = "unknown";
+    }
+  }
+  next();
+});
 
 const Feedback = mongoose.model("Feedback", FeedbackSchema);
 export default Feedback;

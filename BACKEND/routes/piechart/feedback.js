@@ -1,10 +1,10 @@
-// routes/piechart/feedback.js
-import express from "express";   // <--- you forgot this import
-import { getFeedbackStats } from "../../controllers/piechart/feedbackStatsController.js"; 
-// ✅ fixed path to the existing controller
+import { Router } from "express";
+import { getSentimentStats, analyzeOne, analyzeMissing } from "../../controllers/piechart/feedbackStatsController.js";
 
-const router = express.Router();
+const router = Router();
 
-router.get("/stats", getFeedbackStats);
+router.get("/stats/sentiment", getSentimentStats);
+router.post("/analyze-one", analyzeOne);
+router.post("/analyze-missing", analyzeMissing);
 
 export default router;

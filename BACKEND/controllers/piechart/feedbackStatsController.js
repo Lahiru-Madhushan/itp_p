@@ -1,68 +1,73 @@
-// controllers/FeedbackManagement/feedbackController.js
-import { spawn } from "child_process";
 import Feedback from "../../models/FeedbackManagement/Feedback.js";
+import { predictWithPython } from "../../src/services/pythonService.js";
 
-const runSentimentAnalysis = (text) => {
-  return new Promise((resolve, reject) => {
-    const process = spawn("python", ["./python/helper.py", text]);
-
-    let result = "";
-    process.stdout.on("data", (data) => {
-      result += data.toString();
-    });
-
-    process.stderr.on("data", (err) => {
-      console.error("Python error:", err.toString());
-    });
-
-    process.on("close", () => {
-      resolve(result.trim()); // "positive" or "negative"
-    });
-  });
-};
-
-// ✅ Add Feedback
-export const addFeedback = async (req, res) => {
+// GET /api/feedback/stats/sentiment
+export const getSentimentStats = async (req, res) => {
   try {
-    const { reviewerName, email, reviewTitle, detailedFeedback, category, wouldRecommend } = req.body || {};
-    const imagePaths = req.files ? req.files.map((f) => `/uploads/${f.filename}`) : [];
+    const agg = await Feedback.aggregate([
+      {
+        $group: {
+          _id: "$sentiment",
+          count: { $sum: 1 }
+        }
+      }
+    ]);
 
-    if (!reviewerName || !email || !reviewTitle || !detailedFeedback) {
-      return res.status(400).json({ success: false, message: "All required fields must be filled" });
+    // Normalize to { positive: 0, negative: 0 }
+    const stats = { positive: 0, negative: 0, unknown: 0 };
+    for (const row of agg) {
+      const key = row._id || "unknown";
+      if (stats[key] !== undefined) stats[key] = row.count;
+      else stats.unknown += row.count;
     }
 
-    // 🆕 Run sentiment analysis
-    const sentiment = await runSentimentAnalysis(detailedFeedback);
-
-    const feedback = new Feedback({
-      reviewerName,
-      email,
-      reviewTitle,
-      detailedFeedback,
-      category,
-      wouldRecommend: wouldRecommend === "true" || wouldRecommend === true,
-      images: imagePaths,
-      sentiment,
-    });
-
-    await feedback.save();
-    res.status(201).json({ success: true, message: "Feedback submitted successfully", feedback });
+    res.json(stats);
   } catch (err) {
-    console.error("Error adding feedback:", err);
-    res.status(500).json({ success: false, message: err.message });
+    console.error(err);
+    res.status(500).json({ message: "Failed to compute stats" });
   }
 };
 
-// controllers/FeedbackManagement/feedbackController.js
-
-export const getFeedbackStats = async (req, res) => {
+// POST /api/feedback/analyze-one
+// body: { id } -> updates the sentiment on that doc
+export const analyzeOne = async (req, res) => {
   try {
-    const total = await Feedback.countDocuments();
-    const positive = await Feedback.countDocuments({ sentiment: "positive" });
-    const negative = await Feedback.countDocuments({ sentiment: "negative" });
+    const { id } = req.body;
+    const fb = await Feedback.findById(id);
+    if (!fb) return res.status(404).json({ message: "Feedback not found" });
 
-    res.json({ total, positive, negative });
+    const sentiment = await predictWithPython(fb.detailedFeedback || "");
+    fb.sentiment = sentiment;
+    await fb.save();
+
+    res.json({ id: fb._id, sentiment });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    console.error(err);
+    res.status(500).json({ message: "Failed to analyze one", error: String(err) });
+  }
+};
+
+// POST /api/feedback/analyze-missing
+// Analyzes only docs where sentiment is not set
+export const analyzeMissing = async (req, res) => {
+  try {
+    const docs = await Feedback.find({ sentiment: { $exists: false } });
+    let updated = 0;
+
+    for (const fb of docs) {
+      try {
+        const sentiment = await predictWithPython(fb.detailedFeedback || "");
+        fb.sentiment = sentiment;
+        await fb.save();
+        updated++;
+      } catch (e) {
+        console.warn("Analyze error for", fb._id, e?.message);
+      }
+    }
+
+    res.json({ analyzed: updated, totalMissingAtStart: docs.length });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to analyze missing", error: String(err) });
   }
 };
