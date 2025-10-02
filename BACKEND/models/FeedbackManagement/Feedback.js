@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { predictWithPython } from "../../src/services/pythonService.js"; // adjust path
+import { predictWithPython } from "../../src/services/pythonService.js"; // adjust path if needed
 
 const { Schema } = mongoose;
 
@@ -22,19 +22,25 @@ const FeedbackSchema = new Schema(
     },
     wouldRecommend: { type: Boolean, default: false },
     images: [{ type: String, trim: true }],
-    sentiment: { type: String, enum: ["positive", "negative", "unknown"], default: "unknown" }
+
+    // ✅ unified enum: includes "unknown" for unclassified
+    sentiment: {
+      type: String,
+      enum: ["positive", "negative", "unknown"],
+      default: "unknown",
+    },
   },
   { timestamps: true }
 );
 
-// 🔥 Pre-save hook to run sentiment analysis
+// 🔥 Pre-save hook → auto-run Python sentiment if missing/unknown
 FeedbackSchema.pre("save", async function (next) {
   if (!this.sentiment || this.sentiment === "unknown") {
     try {
       const result = await predictWithPython(this.detailedFeedback || "");
       this.sentiment = result || "unknown";
     } catch (err) {
-      console.error("Sentiment classification failed:", err.message);
+      console.error("⚠️ Sentiment classification failed:", err.message);
       this.sentiment = "unknown";
     }
   }

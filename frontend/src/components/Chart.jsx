@@ -28,15 +28,6 @@ const SentimentPie = () => {
     setLoading(false);
   };
 
-  const analyzeMissing = async () => {
-    try {
-      await api.post("/Chart/analyze-missing");
-      await fetchStats();
-    } catch (error) {
-      console.error("Error analyzing missing data:", error);
-    }
-  };
-
   useEffect(() => {
     fetchStats();
   }, []);
@@ -51,16 +42,14 @@ const SentimentPie = () => {
 
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      const percentage = total > 0 ? ((data.value / total) * 100).toFixed(1) : 0;
-      
+      const d = payload[0].payload;
+      const percentage = total > 0 ? ((d.value / total) * 100).toFixed(1) : 0;
+
       return (
         <div className="bg-white p-4 rounded-xl shadow-2xl border border-gray-100">
-          <p className="font-semibold text-gray-900">{data.name}</p>
-          <p className="text-sm text-gray-600">
-            {data.value.toLocaleString()} entries
-          </p>
-          <p className="text-sm font-medium" style={{ color: data.color }}>
+          <p className="font-semibold text-gray-900">{d.name}</p>
+          <p className="text-sm text-gray-600">{d.value.toLocaleString()} entries</p>
+          <p className="text-sm font-medium" style={{ color: d.color }}>
             {percentage}% of total
           </p>
         </div>
@@ -71,18 +60,17 @@ const SentimentPie = () => {
 
   const CustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
     if (percent === 0) return null;
-    
     const RADIAN = Math.PI / 180;
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
     return (
-      <text 
-        x={x} 
-        y={y} 
-        fill="white" 
-        textAnchor={x > cx ? 'start' : 'end'} 
+      <text
+        x={x}
+        y={y}
+        fill="white"
+        textAnchor={x > cx ? "start" : "end"}
         dominantBaseline="central"
         className="text-sm font-bold drop-shadow-md"
       >
@@ -108,15 +96,6 @@ const SentimentPie = () => {
             </p>
           </div>
         </div>
-        
-        <button 
-          onClick={analyzeMissing}
-          className="group relative inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 min-w-[160px] justify-center"
-        >
-          <Sparkles className="h-4 w-4 group-hover:scale-110 transition-transform" />
-          <span>Analyze Missing</span>
-          <div className="absolute inset-0 rounded-2xl bg-white opacity-0 group-hover:opacity-10 transition-opacity"></div>
-        </button>
       </div>
 
       {/* Chart Section */}
@@ -148,34 +127,30 @@ const SentimentPie = () => {
                   stroke="white"
                 >
                   {data.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
+                    <Cell
+                      key={`cell-${index}`}
                       fill={hoveredIndex === index ? HOVER_COLORS[index] : COLORS[index]}
                       className="transition-all duration-300 transform hover:scale-105"
                     />
                   ))}
                 </Pie>
                 <Tooltip content={<CustomTooltip />} />
-                <Legend 
+                <Legend
                   verticalAlign="bottom"
                   height={36}
                   iconType="circle"
                   iconSize={10}
-                  formatter={(value, entry) => (
-                    <span className="text-sm font-medium text-gray-700">
-                      {value}
-                    </span>
+                  formatter={(value) => (
+                    <span className="text-sm font-medium text-gray-700">{value}</span>
                   )}
                 />
               </PieChart>
             </ResponsiveContainer>
-            
+
             {/* Center Total */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="text-center">
-                <div className="text-2xl font-bold text-gray-800">
-                  {total.toLocaleString()}
-                </div>
+                <div className="text-2xl font-bold text-gray-800">{total.toLocaleString()}</div>
                 <div className="text-sm text-gray-500">Total Feedback</div>
               </div>
             </div>
@@ -186,7 +161,7 @@ const SentimentPie = () => {
             {data.map((item, index) => {
               const percentage = total > 0 ? ((item.value / total) * 100).toFixed(1) : 0;
               return (
-                <div 
+                <div
                   key={item.name}
                   className="group p-4 rounded-2xl border-2 border-transparent hover:border-gray-200 bg-white/50 hover:bg-white/80 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer"
                   onMouseEnter={() => setHoveredIndex(index)}
@@ -194,53 +169,34 @@ const SentimentPie = () => {
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div 
+                      <div
                         className="w-4 h-4 rounded-full shadow-sm"
                         style={{ backgroundColor: COLORS[index] }}
                       ></div>
-                      <span className="font-semibold text-gray-700">
-                        {item.name}
-                      </span>
+                      <span className="font-semibold text-gray-700">{item.name}</span>
                     </div>
                     <div className="text-right">
                       <div className="text-lg font-bold text-gray-900">
                         {item.value.toLocaleString()}
                       </div>
-                      <div className="text-sm text-gray-500">
-                        {percentage}%
-                      </div>
+                      <div className="text-sm text-gray-500">{percentage}%</div>
                     </div>
                   </div>
-                  
+
                   {/* Progress Bar */}
                   <div className="mt-3 w-full bg-gray-200 rounded-full h-2">
-                    <div 
+                    <div
                       className="h-2 rounded-full transition-all duration-500 ease-out"
-                      style={{ 
+                      style={{
                         width: `${percentage}%`,
                         backgroundColor: COLORS[index],
-                        boxShadow: `0 0 8px ${COLORS[index]}40`
+                        boxShadow: `0 0 8px ${COLORS[index]}40`,
                       }}
                     ></div>
                   </div>
                 </div>
               );
             })}
-            
-            {/* Summary Card */}
-            <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100">
-              <div className="text-center">
-                <p className="text-sm font-medium text-blue-800">
-                  📊 Analysis Complete
-                </p>
-                <p className="text-xs text-blue-600 mt-1">
-                  {total > 0 
-                    ? `Based on ${total.toLocaleString()} feedback entries` 
-                    : 'No feedback data available'
-                  }
-                </p>
-              </div>
-            </div>
           </div>
         </div>
       )}
