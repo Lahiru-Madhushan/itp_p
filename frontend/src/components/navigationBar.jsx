@@ -221,7 +221,7 @@ const NavigationBar = () => {
                         onClick={() => setIsProfileOpen(false)}
                       >
                         <User className="h-5 w-5 mr-3" /> My Profile
-                      </Link>
+                      </Link>{/* 
                       <Link
                         to="/orders"
                         className="flex items-center px-6 py-3 text-sm font-semibold text-gray-700 hover:bg-gradient-to-r hover:from-yellow-100 hover:to-yellow-200 hover:text-black transition-all duration-300 group"
@@ -235,7 +235,7 @@ const NavigationBar = () => {
                         onClick={() => setIsProfileOpen(false)}
                       >
                         <User className="h-5 w-5 mr-3" /> My Reviews
-                      </Link>
+                      </Link> */}
                       <div className="border-t border-yellow-200 my-3 mx-6"></div>
                       <button
                         onClick={() => {
