@@ -1,6 +1,9 @@
+
 import express from "express";
 import multer from "multer";
 import path from "path";
+import { verifyToken } from "../../middleware/authMiddleware.js";
+
 import {
   addFeedback,
   getAllFeedback,
@@ -25,6 +28,8 @@ const upload = multer({ storage });
 router.post("/add", upload.array("images", 5), addFeedback);
 router.get("/all", getAllFeedback);
 router.put("/update/:id", upload.array("images", 5), updateFeedback);
-router.delete("/delete/:id", deleteFeedback);
+router.delete("/delete/:id", verifyToken, deleteFeedback);
+
+
 
 export default router;
