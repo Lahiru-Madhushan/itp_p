@@ -15,6 +15,7 @@ export default function AdminCustomizationPage() {
     productId: "",
     options: [],
   });
+  const [errors, setErrors] = useState({}); // ✅ For inline validation
   const [editingId, setEditingId] = useState(null);
 
   useEffect(() => {
@@ -26,7 +27,7 @@ export default function AdminCustomizationPage() {
     try {
       const [productsRes, customizationsRes] = await Promise.all([
         axios.get(`${API}/product/allProducts`),
-        axios.get(`${API}/customization/all`)
+        axios.get(`${API}/customization/all`),
       ]);
       setProducts(productsRes.data);
       setCustomizations(customizationsRes.data);
@@ -60,7 +61,9 @@ export default function AdminCustomizationPage() {
 
   const removeValue = (optionIndex, valueIndex) => {
     const newOptions = [...formData.options];
-    newOptions[optionIndex].values = newOptions[optionIndex].values.filter((_, i) => i !== valueIndex);
+    newOptions[optionIndex].values = newOptions[optionIndex].values.filter(
+      (_, i) => i !== valueIndex
+    );
     setFormData({ ...formData, options: newOptions });
   };
 
@@ -73,17 +76,60 @@ export default function AdminCustomizationPage() {
   const handleOptionChange = (index, field, value) => {
     const newOptions = [...formData.options];
     newOptions[index][field] = value;
+
+    // ✅ Live validation
+    if (field === "name" && /[0-9]/.test(value)) {
+      setErrors({
+        ...errors,
+        [`option-${index}`]: "Option name cannot contain numbers",
+      });
+    } else {
+      const newErrors = { ...errors };
+      delete newErrors[`option-${index}`];
+      setErrors(newErrors);
+    }
+
     setFormData({ ...formData, options: newOptions });
   };
 
   const handleValueChange = (optionIndex, valueIndex, field, value) => {
     const newOptions = [...formData.options];
-    newOptions[optionIndex].values[valueIndex][field] = field === "price" ? Number(value) : value;
+    newOptions[optionIndex].values[valueIndex][field] =
+      field === "price" ? value : value;
+
+    const errorKey = `value-${optionIndex}-${valueIndex}-${field}`;
+
+    // ✅ Live validation for label (no numbers)
+    if (field === "label" && /[0-9]/.test(value)) {
+      setErrors({
+        ...errors,
+        [errorKey]: "Value label cannot contain numbers",
+      });
+    }
+    // ✅ Live validation for price (no letters)
+    else if (field === "price" && /[a-zA-Z]/.test(value)) {
+      setErrors({
+        ...errors,
+        [errorKey]: "Price must contain numbers only",
+      });
+    } else {
+      const newErrors = { ...errors };
+      delete newErrors[errorKey];
+      setErrors(newErrors);
+    }
+
     setFormData({ ...formData, options: newOptions });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Prevent submit if errors exist
+    if (Object.keys(errors).length > 0) {
+      alert("Please fix validation errors before saving ❌");
+      return;
+    }
+
     setIsSubmitting(true);
 
     const sanitized = {
@@ -117,6 +163,7 @@ export default function AdminCustomizationPage() {
   const resetForm = () => {
     setFormData({ productId: "", options: [] });
     setEditingId(null);
+    setErrors({});
   };
 
   const handleDelete = async (id) => {
@@ -175,7 +222,9 @@ export default function AdminCustomizationPage() {
                   </label>
                   <select
                     value={formData.productId}
-                    onChange={(e) => setFormData({ ...formData, productId: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, productId: e.target.value })
+                    }
                     className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                     required
                   >
@@ -208,20 +257,38 @@ export default function AdminCustomizationPage() {
                     <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
                       <Package className="w-12 h-12 text-gray-400 mx-auto mb-2" />
                       <p className="text-gray-500">No options added yet</p>
-                      <p className="text-sm text-gray-400">Click "Add Option" to get started</p>
+                      <p className="text-sm text-gray-400">
+                        Click "Add Option" to get started
+                      </p>
                     </div>
                   )}
 
                   {formData.options.map((opt, optIndex) => (
-                    <div key={optIndex} className="border border-gray-200 rounded-lg p-4 mb-4 bg-gray-50/50">
+                    <div
+                      key={optIndex}
+                      className="border border-gray-200 rounded-lg p-4 mb-4 bg-gray-50/50"
+                    >
                       <div className="flex items-start justify-between mb-3">
-                        <input
-                          type="text"
-                          placeholder="Option name (e.g., Fabric Type, Color)"
-                          className="flex-1 border border-gray-300 rounded-lg p-3 mr-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          value={opt.name}
-                          onChange={(e) => handleOptionChange(optIndex, "name", e.target.value)}
-                        />
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            placeholder="Option name (e.g., Fabric Type, Color)"
+                            className={`w-full border rounded-lg p-3 mr-3 focus:ring-2 ${
+                              errors[`option-${optIndex}`]
+                                ? "border-red-500 focus:ring-red-400"
+                                : "border-gray-300 focus:ring-blue-500"
+                            }`}
+                            value={opt.name}
+                            onChange={(e) =>
+                              handleOptionChange(optIndex, "name", e.target.value)
+                            }
+                          />
+                          {errors[`option-${optIndex}`] && (
+                            <p className="text-red-500 text-sm mt-1">
+                              {errors[`option-${optIndex}`]}
+                            </p>
+                          )}
+                        </div>
                         <button
                           type="button"
                           onClick={() => removeOption(optIndex)}
@@ -235,31 +302,60 @@ export default function AdminCustomizationPage() {
                       <div className="space-y-2">
                         {opt.values.map((val, valIndex) => (
                           <div key={valIndex} className="flex gap-2 items-start">
-                            <input
-                              type="text"
-                              placeholder="Value label (e.g., Cotton, Silk)"
-                              className="flex-1 border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              value={val.label}
-                              onChange={(e) =>
-                                handleValueChange(optIndex, valIndex, "label", e.target.value)
-                              }
-                            />
+                            <div className="flex-1">
+                              <input
+                                type="text"
+                                placeholder="Value label (e.g., Cotton, Silk)"
+                                className={`w-full border rounded-lg p-2 focus:ring-2 ${
+                                  errors[`value-${optIndex}-${valIndex}-label`]
+                                    ? "border-red-500 focus:ring-red-400"
+                                    : "border-gray-300 focus:ring-blue-500"
+                                }`}
+                                value={val.label}
+                                onChange={(e) =>
+                                  handleValueChange(
+                                    optIndex,
+                                    valIndex,
+                                    "label",
+                                    e.target.value
+                                  )
+                                }
+                              />
+                              {errors[`value-${optIndex}-${valIndex}-label`] && (
+                                <p className="text-red-500 text-sm mt-1">
+                                  {errors[`value-${optIndex}-${valIndex}-label`]}
+                                </p>
+                              )}
+                            </div>
+
                             <div className="flex gap-2">
                               <div className="relative">
                                 <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
                                   $
                                 </span>
                                 <input
-                                  type="number"
+                                  type="text"
                                   placeholder="0.00"
-                                  className="w-24 border border-gray-300 rounded-lg p-2 pl-7 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  className={`w-24 border rounded-lg p-2 pl-7 focus:ring-2 ${
+                                    errors[`value-${optIndex}-${valIndex}-price`]
+                                      ? "border-red-500 focus:ring-red-400"
+                                      : "border-gray-300 focus:ring-blue-500"
+                                  }`}
                                   value={val.price}
                                   onChange={(e) =>
-                                    handleValueChange(optIndex, valIndex, "price", e.target.value)
+                                    handleValueChange(
+                                      optIndex,
+                                      valIndex,
+                                      "price",
+                                      e.target.value
+                                    )
                                   }
-                                  min="0"
-                                  step="0.01"
                                 />
+                                {errors[`value-${optIndex}-${valIndex}-price`] && (
+                                  <p className="text-red-500 text-xs mt-1">
+                                    {errors[`value-${optIndex}-${valIndex}-price`]}
+                                  </p>
+                                )}
                               </div>
                               {opt.values.length > 1 && (
                                 <button
@@ -295,7 +391,11 @@ export default function AdminCustomizationPage() {
                     className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     <Save size={16} />
-                    {isSubmitting ? "Saving..." : editingId ? "Update Customization" : "Save Customization"}
+                    {isSubmitting
+                      ? "Saving..."
+                      : editingId
+                      ? "Update Customization"
+                      : "Save Customization"}
                   </button>
                   {editingId && (
                     <button
@@ -317,7 +417,9 @@ export default function AdminCustomizationPage() {
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center gap-2 mb-4">
                 <Search className="w-5 h-5 text-gray-600" />
-                <h2 className="text-lg font-semibold text-gray-800">Existing Customizations</h2>
+                <h2 className="text-lg font-semibold text-gray-800">
+                  Existing Customizations
+                </h2>
               </div>
 
               {/* Search */}
@@ -345,9 +447,14 @@ export default function AdminCustomizationPage() {
                   </div>
                 ) : (
                   filteredCustomizations.map((c) => (
-                    <div key={c._id} className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
+                    <div
+                      key={c._id}
+                      className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors"
+                    >
                       <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-semibold text-gray-800">{c.productId?.name}</h3>
+                        <h3 className="font-semibold text-gray-800">
+                          {c.productId?.name}
+                        </h3>
                         <div className="flex gap-1">
                           <button
                             onClick={() => handleEdit(c)}
@@ -371,7 +478,8 @@ export default function AdminCustomizationPage() {
                             <span className="font-medium">{o.name}:</span>{" "}
                             {o.values.map((v, vIndex) => (
                               <span key={vIndex}>
-                                {v.label} (+${v.price}){vIndex < o.values.length - 1 ? ", " : ""}
+                                {v.label} (+${v.price})
+                                {vIndex < o.values.length - 1 ? ", " : ""}
                               </span>
                             ))}
                           </div>
