@@ -2,7 +2,8 @@
 import { VERIFICATION_EMAIL_TEMPLATE,
          PASSWORD_RESET_REQUEST_TEMPLATE,
          PASSWORD_RESET_SUCCESS_TEMPLATE,
-        WELCOME_EMAIL_TEMPLATE } from "./emailTemplatesUser.js";
+         WELCOME_EMAIL_TEMPLATE,
+          } from "./emailTemplatesUser.js";
 import { transporter, FROM } from "./email.config.js";
 
 // 1) Verification code email
@@ -69,12 +70,51 @@ export const sendResetSuccessEmail = async (email) => {
       to: email,
       subject: "Password Reset Successful",
       html: PASSWORD_RESET_SUCCESS_TEMPLATE,
-      text: "Your password was reset successfully. If this wasn’t you, contact support immediately.",
+      text: "Your password was reset successfully. If this wasn't you, contact support immediately.",
       headers: { "X-Category": "Password Reset" },
     });
     console.log("Password reset success email queued");
   } catch (error) {
     console.error("Error sending password reset success email:", error);
     throw new Error(`Error sending password reset success email: ${error.message || error}`);
+  }
+};
+
+// 5) Payment confirmation email with invoice
+export const sendPaymentConfirmationEmail = async (email, paymentData, invoicePath) => {
+  try {
+    const { customerName, transactionId, amount, paymentMethod, paymentDate } = paymentData;
+    const invoiceDownloadUrl = `${process.env.SERVER_URL || "http://localhost:8070"}/api/payments/invoice/${transactionId}`;
+    
+    const html = PAYMENT_CONFIRMATION_EMAIL_TEMPLATE
+      .replace("{customerName}", customerName || "Customer")
+      .replace("{transactionId}", transactionId)
+      .replace("{amount}", amount)
+      .replace("{paymentMethod}", paymentMethod)
+      .replace("{paymentDate}", paymentDate)
+      .replace("{invoiceDownloadUrl}", invoiceDownloadUrl);
+
+    const mailOptions = {
+      from: FROM,
+      to: email,
+      subject: "Payment Confirmation - Invoice Attached",
+      html,
+      text: `Payment Confirmation\n\nTransaction ID: ${transactionId}\nAmount: Rs. ${amount}\nPayment Method: ${paymentMethod}\nDate: ${paymentDate}\n\nYour invoice is attached to this email.`,
+      headers: { "X-Category": "Payment Confirmation" },
+    };
+
+    // Attach invoice if path is provided
+    if (invoicePath) {
+      mailOptions.attachments = [{
+        filename: `invoice_${transactionId}.pdf`,
+        path: invoicePath
+      }];
+    }
+
+    await transporter.sendMail(mailOptions);
+    console.log("Payment confirmation email queued");
+  } catch (error) {
+    console.error("Error sending payment confirmation email:", error);
+    throw new Error(`Error sending payment confirmation email: ${error.message || error}`);
   }
 };
