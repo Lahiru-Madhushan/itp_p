@@ -1,3 +1,4 @@
+
 import {
   BrowserRouter as Router,
   Routes,
@@ -24,7 +25,8 @@ import AboutUsPage from "./components/AboutUsPage";
 
 import Feedback from "./components/Feedback/FeedbackPage";
 import Pay from "./components/paymentManagement/pay"
-
+import PaySuccess from "./components/paymentManagement/PaymentSuccess";
+import PayCancel from "./components/paymentManagement/PaymentCancel";
 
 
 import Mensware from "./components/productManagement/Mensware";
@@ -138,6 +140,8 @@ function App() {
            <Route path="/KidswarePage" element={<KidswarePage />} />
              <Route path="/Feedback" element={<Feedback />} />
           <Route path="/Pay" element={<Pay />} />
+            <Route path="/PaySuccess" element={<PaySuccess />} />
+              <Route path="/PayCancel" element={<PayCancel />} />
 
 
          
@@ -180,3 +184,4 @@ function App() {
 }
 
 export default App;
+
