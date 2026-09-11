@@ -1,4 +1,5 @@
 import Product from "../../models/productManagement/Product.js";
+import { fileUrls } from "../../middleware/upload.js";
 
 // Create Product
 export const addProduct = async (req, res) => {
@@ -9,7 +10,7 @@ export const addProduct = async (req, res) => {
       throw new Error("Name, category, price, and stockQuantity are required");
     }
 
-    const imagePaths = req.files ? req.files.map((f) => `/uploads/${f.filename}`) : [];
+    const imagePaths = fileUrls(req.files);
 
     const newProduct = new Product({
       name,
@@ -69,7 +70,7 @@ export const updateProduct = async (req, res) => {
 
     // handle new uploaded images
     if (req.files && req.files.length > 0) {
-      updateData.images = req.files.map((f) => `/uploads/${f.filename}`);
+      updateData.images = fileUrls(req.files);
     }
 
     const updatedProduct = await Product.findByIdAndUpdate(productId, updateData, {

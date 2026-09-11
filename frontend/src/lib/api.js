@@ -8,3 +8,15 @@ export const API_ROOT = (
 ).replace(/\/+$/, "");
 
 export default API_ROOT;
+
+/**
+ * Resolve a stored image reference to a URL the browser can load.
+ *
+ * Records created before the Cloudinary migration hold a server-relative
+ * path ("/uploads/123.png"); newer ones hold an absolute Cloudinary URL.
+ * Both must keep working, so absolute URLs pass through untouched.
+ */
+export const imageUrl = (p) => {
+  if (!p) return "";
+  return /^https?:\/\//i.test(p) ? p : `${API_ROOT}${p.startsWith("/") ? "" : "/"}${p}`;
+};

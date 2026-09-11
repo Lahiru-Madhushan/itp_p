@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { Search, Trash2, Edit, Plus, X, Package, Download } from "lucide-react";
 import { generateProductsPDF } from "./productPDF"; // <-- Import PDF generator
-import { API_ROOT } from "../../lib/api";
+import { API_ROOT, imageUrl } from "../../lib/api";
 
 export default function AdminProducts() {
   const [products, setProducts] = useState([]);
@@ -284,7 +284,7 @@ export default function AdminProducts() {
                           p.images.map((img, idx) => (
                             <img
                               key={idx}
-                              src={`${API_ROOT}${img}`}
+                              src={imageUrl(img)}
                               alt="product"
                               className="h-12 w-12 object-cover rounded border"
                             />

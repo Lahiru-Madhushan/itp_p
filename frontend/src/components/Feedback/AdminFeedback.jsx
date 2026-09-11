@@ -8,7 +8,7 @@ import {
   MessageSquare,
 } from "lucide-react";
 import api from "../../lib/axios";
-import { API_ROOT } from "../../lib/api";
+import { imageUrl } from "../../lib/api";
 
 export default function AdminFeedback() {
   const [feedbacks, setFeedbacks] = useState([]);
@@ -261,7 +261,7 @@ export default function AdminFeedback() {
                           f.images.map((img, idx) => (
                             <img
                               key={idx}
-                              src={`${API_ROOT}${img}`}
+                              src={imageUrl(img)}
                               alt="feedback"
                               className="h-12 w-12 object-cover rounded border"
                             />

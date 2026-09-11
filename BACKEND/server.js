@@ -97,6 +97,9 @@ app.use("/api/payments", paymentRoutes);
 import Order from "./routes/orderManagement/orderRoutes.js";
 app.use("/order", Order);
 
+import chatRoutes from "./routes/AI/chat.js";
+app.use("/api/chat", chatRoutes);
+
 app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
   await verifyMailer();

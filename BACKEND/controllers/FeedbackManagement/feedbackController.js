@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import Feedback from "../../models/FeedbackManagement/Feedback.js";
 import User from "../../models/UserManagement/User.js";
 import { predictWithPython } from "../../src/services/pythonService.js"; // adjust path if needed
+import { fileUrls } from "../../middleware/upload.js";
 
 /**
  * A requester may change a review if they own it, or if they are an admin.
@@ -45,9 +46,7 @@ export const addFeedback = async (req, res) => {
         .json({ success: false, message: "All required fields must be filled" });
     }
 
-    const imagePaths = req.files
-      ? req.files.map((f) => `/uploads/${f.filename}`)
-      : [];
+    const imagePaths = fileUrls(req.files);
 
     // 🔥 Run Python sentiment analysis (best-effort)
     let sentiment = "unknown";
@@ -146,9 +145,7 @@ export const updateFeedback = async (req, res) => {
       wouldRecommend,
     } = req.body || {};
 
-    const imagePaths = req.files
-      ? req.files.map((f) => `/uploads/${f.filename}`)
-      : [];
+    const imagePaths = fileUrls(req.files);
 
     // 🔥 Re-run sentiment analysis if feedback text is updated
     let sentiment;

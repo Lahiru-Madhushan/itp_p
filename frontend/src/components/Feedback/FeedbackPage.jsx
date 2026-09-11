@@ -19,9 +19,7 @@ import {
 import api from "../../lib/axios";
 import { useAuthStore } from "../../store/user";
 import Footer from "../Footer";
-import { API_ROOT } from "../../lib/api";
-
-const SERVER = `${API_ROOT}`;
+import { imageUrl } from "../../lib/api";
 
 const CATEGORIES = ["Product", "Service", "Delivery", "Website", "Other"];
 
@@ -202,12 +200,12 @@ const ReviewCard = ({ review, canManage, onEdit, onDelete, onZoom }) => {
           {review.images.map((img, idx) => (
             <button
               key={idx}
-              onClick={() => onZoom(`${SERVER}${img}`)}
+              onClick={() => onZoom(imageUrl(img))}
               className="overflow-hidden rounded-xl border border-gray-200 transition-transform hover:scale-[1.03] focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
               aria-label={`View photo ${idx + 1} of ${review.images.length}`}
             >
               <img
-                src={`${SERVER}${img}`}
+                src={imageUrl(img)}
                 alt=""
                 loading="lazy"
                 className="h-20 w-20 object-cover"

@@ -21,7 +21,7 @@ import {
 import axios from "axios";
 import { useAuthStore } from "../../store/user";
 import { useNavigate } from "react-router-dom";
-import { API_ROOT } from "../../lib/api";
+import { API_ROOT, imageUrl } from "../../lib/api";
 
 const UserProfile = () => {
   const { user, isAuthenticated } = useAuthStore();
@@ -615,7 +615,7 @@ const UserProfile = () => {
                           <div key={index} className="flex items-center space-x-3 bg-gray-50 p-3 rounded-lg">
                             {item.images?.[0] && (
                               <img
-                                src={`${API_ROOT}${item.images[0]}`}
+                                src={imageUrl(item.images[0])}
                                 alt={item.name}
                                 className="w-12 h-12 object-cover rounded"
                               />
