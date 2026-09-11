@@ -16,7 +16,7 @@ import {
   Check,
 } from "lucide-react";
 import Footer from "../Footer";
-import { API_ROOT } from "../../lib/api";
+import { API_ROOT, imageUrl } from "../../lib/api";
 
 const API = API_ROOT;
 
@@ -400,7 +400,7 @@ export default function FemaleWarePage() {
                   <div className="relative bg-gray-50 h-64 flex items-center justify-center">
                     {product.images?.length > 0 ? (
                       <img
-                        src={`${API}${product.images[currentIndex]}`}
+                        src={imageUrl(product.images[currentIndex])}
                         alt={product.name}
                         className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
                       />
@@ -485,7 +485,7 @@ export default function FemaleWarePage() {
                 {selectedProduct.images?.length > 0 ? (
                   <>
                     <img
-                      src={`${API}${selectedProduct.images[modalImageIndex]}`}
+                      src={imageUrl(selectedProduct.images[modalImageIndex])}
                       alt={selectedProduct.name}
                       className="w-full h-full object-contain rounded-lg"
                     />
@@ -494,7 +494,7 @@ export default function FemaleWarePage() {
                       {selectedProduct.images.map((img, idx) => (
                         <img
                           key={idx}
-                          src={`${API}${img}`}
+                          src={imageUrl(img)}
                           alt="thumb"
                           onClick={() => setModalImageIndex(idx)}
                           className={`h-16 w-16 object-contain rounded-lg border cursor-pointer ${

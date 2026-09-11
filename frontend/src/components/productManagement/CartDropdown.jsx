@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Trash2, ShoppingBag } from "lucide-react";
 import axios from "axios";
 import { useAuthStore } from "../../store/user"; // Adjust path to your store
-import { API_ROOT } from "../../lib/api";
+import { API_ROOT, imageUrl } from "../../lib/api";
 
 const API = API_ROOT;
 
@@ -137,7 +137,7 @@ const CartDropdown = ({ cart, onRemove }) => {
             <div key={item._id} className="flex items-center justify-between mb-3 border-b pb-2">
               <div className="flex items-center gap-3">
                 <img
-                  src={`${API}${item.images?.[0] || ""}`}
+                  src={imageUrl(item.images?.[0] || "")}
                   alt={item.name}
                   className="h-12 w-12 object-cover rounded border"
                   onError={(e) => {
