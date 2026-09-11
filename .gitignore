@@ -144,3 +144,7 @@ vite.config.ts.timestamp-*
 # Local upload scratch directory. Images live in Cloudinary; anything
 # written here on a server is lost on the next redeploy anyway.
 BACKEND/uploads/
+
+# One-off record of the Cloudinary image migration (local rollback aid).
+BACKEND/images-backup.json
+BACKEND/images-map.json
