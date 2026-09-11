@@ -39,8 +39,14 @@ app.use(cors({
     if (allowedOrigins.includes(origin.replace(/\/$/, ""))) {
       return callback(null, true);
     }
-    console.warn(`[cors] blocked origin: ${origin}`);
-    return callback(new Error(`Origin ${origin} is not allowed by CORS`));
+    // Refuse by omitting the CORS headers, not by throwing. Throwing reaches
+    // Express's default error handler and surfaces as a 500, which reads like
+    // a server fault instead of a misconfigured CLIENT_URL. The browser still
+    // blocks the response either way.
+    console.warn(
+      `[cors] blocked origin: ${origin} (allowed: ${allowedOrigins.join(", ")})`
+    );
+    return callback(null, false);
   },
   credentials: true
 }));
