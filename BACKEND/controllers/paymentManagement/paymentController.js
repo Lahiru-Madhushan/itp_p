@@ -24,12 +24,37 @@ if (!fs.existsSync(INVOICE_DIR)) {
   fs.mkdirSync(INVOICE_DIR, { recursive: true });
 }
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+// Stripe is optional. new Stripe(undefined) throws, and this module is
+// imported by server.js at boot, so an unset key would crash the whole app
+// on startup rather than only breaking checkout. Deployments that don't take
+// payments can simply leave STRIPE_SECRET_KEY unset.
+const stripeConfigured = Boolean(process.env.STRIPE_SECRET_KEY);
+
+if (!stripeConfigured) {
+  console.warn(
+    "[stripe] STRIPE_SECRET_KEY is not set - payment endpoints are disabled."
+  );
+}
+
+const stripe = stripeConfigured
+  ? new Stripe(process.env.STRIPE_SECRET_KEY)
+  : null;
+
+/** Guard for the handlers that actually talk to Stripe. */
+const requireStripe = (res) => {
+  if (stripe) return true;
+  res.status(503).json({
+    success: false,
+    message: "Payments are not enabled on this server.",
+  });
+  return false;
+};
 
 /* ---------------------------------------------
    Create Stripe Checkout Session
 --------------------------------------------- */
 export const createCheckoutSession = async (req, res) => {
+  if (!requireStripe(res)) return;
   try {
     const { userId, cart } = req.body;
 
@@ -170,6 +195,7 @@ export const createCheckoutSession = async (req, res) => {
    Stripe Webhook (update order + save payment)
 --------------------------------------------- */
 export const handleStripeWebhook = async (req, res) => {
+  if (!requireStripe(res)) return;
   const sig = req.headers["stripe-signature"];
   let event;
 
@@ -460,6 +486,7 @@ export const getPaymentSuccessDetails = async (req, res) => {
       order = await Order.findById(order_id)
         .populate("userId", "firstName lastName email phoneNumber address");
     } else if (session_id) {
+      if (!requireStripe(res)) return;
       const session = await stripe.checkout.sessions.retrieve(session_id);
       order = await Order.findById(session.metadata.orderId)
         .populate("userId", "firstName lastName email phoneNumber address");
