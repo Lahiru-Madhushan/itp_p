@@ -140,3 +140,7 @@ vite.config.ts.timestamp-*
 
 
 .env
+
+# Local upload scratch directory. Images live in Cloudinary; anything
+# written here on a server is lost on the next redeploy anyway.
+BACKEND/uploads/
