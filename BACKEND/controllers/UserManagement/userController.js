@@ -67,12 +67,26 @@ export const addUser = async (req, res) => {
 
     //jwt
     generateTokenAndSetCookie(res,newUser._id);
-    await sendVerificationEmail(newUser.email, verificationToken);
 
-    
+    // The account is already persisted, so a mail failure must not fail the
+    // signup - otherwise the user is left with an account they cannot re-create.
+    let verificationEmailSent = true;
+    try {
+      await sendVerificationEmail(newUser.email, verificationToken);
+    } catch (mailError) {
+      verificationEmailSent = false;
+      console.error("Signup succeeded but verification email failed:", mailError);
+      if (process.env.NODE_ENV !== "production") {
+        console.log(`[auth] verification code for ${newUser.email}: ${verificationToken}`);
+      }
+    }
+
     res.status(201).json({
         success: true,
-        message: "User Registered successfully",
+        verificationEmailSent,
+        message: verificationEmailSent
+          ? "User Registered successfully"
+          : "User registered, but the verification email could not be sent. Please request a new one.",
         user: {
             ...newUser._doc,
             password: undefined,
@@ -280,13 +294,26 @@ export const forgetPassword=async(req,res)=>{
 
 		await user.save();
 
+		const resetURL = `${process.env.CLIENT_URL || "http://localhost:3000"}/reset-password/${resetToken}`;
+
+		// In development the link is also printed to the server console so the
+		// flow stays testable when SMTP is unavailable.
+		if (process.env.NODE_ENV !== "production") {
+			console.log(`[auth] password reset link for ${user.email}: ${resetURL}`);
+		}
+
 		// send email
-		await sendPasswordResetEmail(user.email, `${process.env.CLIENT_URL}/reset-password/${resetToken}`);
+		await sendPasswordResetEmail(user.email, resetURL);
 
 		res.status(200).json({ success: true, message: "Password reset link sent to your email" });
 	} catch (error) {
-		console.log("Error in forgotPassword ", error);
-		res.status(400).json({ success: false, message: error.message });
+		// Mail transport failures must not be echoed back to the browser - the
+		// raw SMTP reply exposes the mail host and account configuration.
+		console.error("Error in forgotPassword ", error);
+		res.status(500).json({
+			success: false,
+			message: "We couldn't send the reset email right now. Please try again later.",
+		});
 	}
 };
 
@@ -313,11 +340,17 @@ export const resetPassword = async(req,res)=>{
 		user.resetPasswordExpiresAt = undefined;
 		await user.save();
 
-		await sendResetSuccessEmail(user.email);
+		// The password is already changed at this point, so a failure to send the
+		// confirmation email must not report the reset itself as failed.
+		try {
+			await sendResetSuccessEmail(user.email);
+		} catch (mailError) {
+			console.error("Reset succeeded but confirmation email failed:", mailError);
+		}
 
 		res.status(200).json({ success: true, message: "Password reset successful" });
 	} catch (error) {
-		console.log("Error in resetPassword ", error);
+		console.error("Error in resetPassword ", error);
 		res.status(400).json({ success: false, message: error.message });
 	}
 };

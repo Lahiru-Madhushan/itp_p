@@ -3,6 +3,7 @@ import { VERIFICATION_EMAIL_TEMPLATE,
          PASSWORD_RESET_REQUEST_TEMPLATE,
          PASSWORD_RESET_SUCCESS_TEMPLATE,
          WELCOME_EMAIL_TEMPLATE,
+         PAYMENT_CONFIRMATION_EMAIL_TEMPLATE,
           } from "./emailTemplatesUser.js";
 import { transporter, FROM } from "./email.config.js";
 

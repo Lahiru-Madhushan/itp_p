@@ -24,6 +24,7 @@ import Product from "../components/productManagement/AdminProducts";
 import SupplierEmail from "./supplier/SupplierEmail"; 
 import FeedbackPage from "./Feedback/AdminFeedback";
 import Chart from "./Chart";
+import DashboardHome from "./admin/DashboardHome";
 import PaymentManager from "./paymentManagement/paymentAdmin";
 import AdminOrders from "./orderManagement/AdminOrders";
 import { useAuthStore } from "../store/user";
@@ -80,11 +81,27 @@ const AdminDashboard = () => {
     return currentItem?.label || "Dashboard";
   };
 
+  // The overview lays out its own cards, so it must not sit inside the
+  // white panel the other pages use - that would nest a card in a card.
+  const isOverview =
+    location.pathname === "/admin/dashboard" ||
+    location.pathname === "/admin/dashboard/";
+
+  const displayName =
+    [user?.firstName, user?.lastName].filter(Boolean).join(" ") ||
+    user?.name ||
+    "Admin";
+
+  const initials =
+    [user?.firstName?.[0], user?.lastName?.[0]].filter(Boolean).join("").toUpperCase() ||
+    "A";
+
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="h-screen overflow-hidden bg-gray-50 flex">
       {/* Desktop Sidebar */}
       <div className={`
         hidden lg:flex flex-col bg-white shadow-lg transition-all duration-300
+        h-screen shrink-0
         ${isSidebarCollapsed ? 'w-20' : 'w-64'}
       `}>
         {/* Header */}
@@ -146,13 +163,13 @@ const AdminDashboard = () => {
         <div className="p-4 border-t border-gray-200">
           <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
             {!isSidebarCollapsed && (
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-                  <Users className="h-4 w-4 text-gray-600" />
+              <div className="flex items-center space-x-3 min-w-0">
+                <div className="w-9 h-9 shrink-0 bg-amber-500 rounded-full flex items-center justify-center">
+                  <span className="text-xs font-semibold text-white">{initials}</span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">
-                    {user?.name || "Admin"}
+                    {displayName}
                   </p>
                   <p className="text-xs text-gray-500 truncate">Administrator</p>
                 </div>
@@ -184,7 +201,7 @@ const AdminDashboard = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Mobile Header */}
         <header className="lg:hidden bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
           <div className="px-4 sm:px-6 flex justify-between h-16 items-center">
@@ -245,19 +262,27 @@ const AdminDashboard = () => {
         </header>
 
         {/* Breadcrumb & Content */}
-        <main className="flex-1 p-6 overflow-auto">
-          {/* Breadcrumb */}
-          <div className="mb-6 flex items-center text-sm text-gray-600">
-            <Home className="h-4 w-4 mr-2" />
-            <span>Admin</span>
-            <ChevronRight className="h-4 w-4 mx-2" />
-            <span className="font-medium text-gray-900">{getCurrentPageTitle()}</span>
-          </div>
+        <main className="flex-1 p-4 sm:p-6 overflow-y-auto">
+          {/* Breadcrumb - the overview leads with its own greeting instead */}
+          {!isOverview && (
+            <div className="mb-6 flex items-center text-sm text-gray-600">
+              <Home className="h-4 w-4 mr-2" />
+              <span>Admin</span>
+              <ChevronRight className="h-4 w-4 mx-2" />
+              <span className="font-medium text-gray-900">{getCurrentPageTitle()}</span>
+            </div>
+          )}
 
           {/* Page Content */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+          <div
+            className={
+              isOverview
+                ? ""
+                : "bg-white rounded-2xl shadow-sm border border-gray-200 p-6"
+            }
+          >
             <Routes>
-              <Route index element={<Chart />} />
+              <Route index element={<DashboardHome />} />
               <Route path="All-user" element={<UserManagement />} />
               <Route path="orders" element={<AdminOrders />} />
               <Route path="payment" element={<PaymentManager />} />

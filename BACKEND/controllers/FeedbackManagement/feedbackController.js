@@ -1,7 +1,22 @@
 // controllers/FeedbackManagement/feedbackController.js
 import mongoose from "mongoose";
+import jwt from "jsonwebtoken";
 import Feedback from "../../models/FeedbackManagement/Feedback.js";
+import User from "../../models/UserManagement/User.js";
 import { predictWithPython } from "../../src/services/pythonService.js"; // adjust path if needed
+
+/**
+ * A requester may change a review if they own it, or if they are an admin.
+ * Reviews created before ownership was tracked have no userId - those are
+ * editable by admins only, since there is no owner to verify against.
+ */
+const canModify = async (feedback, requesterId) => {
+  if (feedback.userId && feedback.userId.toString() === requesterId.toString()) {
+    return true;
+  }
+  const requester = await User.findById(requesterId).select("role");
+  return requester?.role === "admin";
+};
 
 // ✅ Add Feedback (protected - requires verifyToken middleware to have set req.userId)
 export const addFeedback = async (req, res) => {
@@ -64,11 +79,33 @@ export const addFeedback = async (req, res) => {
   }
 };
 
+/**
+ * Reads the signed-in user from the cookie without requiring one, so a public
+ * route can still tailor its response. Returns null for anonymous visitors.
+ */
+const optionalUser = async (req) => {
+  const token = req.cookies?.token;
+  if (!token) return null;
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (!decoded?.userId) return null;
+    return await User.findById(decoded.userId).select("role");
+  } catch {
+    return null;
+  }
+};
+
 // ✅ Get All (public)
 export const getAllFeedback = async (req, res) => {
   try {
-    const feedbacks = await Feedback.find().sort({ createdAt: -1 });
-    res.json(feedbacks);
+    const feedbacks = await Feedback.find().sort({ createdAt: -1 }).lean();
+
+    // Reviewer email addresses are private. The listing is public, so only an
+    // admin ever receives them; everyone else gets the review without it.
+    const viewer = await optionalUser(req);
+    if (viewer?.role === "admin") return res.json(feedbacks);
+
+    res.json(feedbacks.map(({ email, ...rest }) => rest));
   } catch (err) {
     console.error("getAllFeedback error:", err);
     res.status(500).json({ success: false, message: err.message });
@@ -94,7 +131,7 @@ export const updateFeedback = async (req, res) => {
     }
 
     // Ownership check
-    if (feedback.userId.toString() !== requesterId.toString()) {
+    if (!(await canModify(feedback, requesterId))) {
       return res
         .status(403)
         .json({ success: false, message: "You can only update your own feedback" });
@@ -174,7 +211,7 @@ export const deleteFeedback = async (req, res) => {
         .json({ success: false, message: "Feedback not found" });
 
     // Ownership check
-    if (feedback.userId.toString() !== requesterId.toString()) {
+    if (!(await canModify(feedback, requesterId))) {
       return res
         .status(403)
         .json({ success: false, message: "You can only delete your own feedback" });

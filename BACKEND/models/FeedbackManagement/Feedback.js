@@ -6,6 +6,14 @@ const { Schema } = mongoose;
 
 const FeedbackSchema = new Schema(
   {
+    // Owner of the review. Optional so reviews created before ownership was
+    // tracked still load; new reviews always carry it (set in addFeedback).
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+      index: true,
+    },
     reviewerName: { type: String, required: true, trim: true },
     email: {
       type: String,

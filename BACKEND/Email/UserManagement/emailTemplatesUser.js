@@ -130,3 +130,50 @@ export const WELCOME_EMAIL_TEMPLATE = `
 </body>
 </html>
 `;
+
+export const PAYMENT_CONFIRMATION_EMAIL_TEMPLATE = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Confirmation</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(to right, #4CAF50, #45a049); padding: 20px; text-align: center;">
+    <h1 style="color: white; margin: 0;">Payment Confirmation</h1>
+  </div>
+  <div style="background-color: #f9f9f9; padding: 20px; border-radius: 0 0 5px 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+    <p>Hello {customerName},</p>
+    <p>Thank you for your payment. Here are the details of your transaction:</p>
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+      <tr>
+        <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;"><strong>Transaction ID</strong></td>
+        <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">{transactionId}</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;"><strong>Amount</strong></td>
+        <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">Rs. {amount}</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;"><strong>Payment Method</strong></td>
+        <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">{paymentMethod}</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;"><strong>Date</strong></td>
+        <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">{paymentDate}</td>
+      </tr>
+    </table>
+    <p>Your invoice is attached to this email. You can also download it here:</p>
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="{invoiceDownloadUrl}" style="background-color: #4CAF50; color: white; padding: 12px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Download Invoice</a>
+    </div>
+    <p>If you did not make this payment, please contact our support team immediately.</p>
+    <p>Best regards,<br>Your App Team</p>
+  </div>
+  <div style="text-align: center; margin-top: 20px; color: #888; font-size: 0.8em;">
+    <p>This is an automated message, please do not reply to this email.</p>
+  </div>
+</body>
+</html>
+`;

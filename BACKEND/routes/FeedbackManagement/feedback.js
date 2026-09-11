@@ -25,9 +25,9 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Routes
-router.post("/add", upload.array("images", 5), addFeedback);
+router.post("/add", verifyToken, upload.array("images", 5), addFeedback);
 router.get("/all", getAllFeedback);
-router.put("/update/:id", upload.array("images", 5), updateFeedback);
+router.put("/update/:id", verifyToken, upload.array("images", 5), updateFeedback);
 router.delete("/delete/:id", verifyToken, deleteFeedback);
 
 

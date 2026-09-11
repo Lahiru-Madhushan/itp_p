@@ -7,6 +7,7 @@ import cookieParser from "cookie-parser";
 import path from "path";
 import { handleStripeWebhook } from "./controllers/paymentManagement/paymentController.js";
 import { fileURLToPath } from "url";
+import { verifyMailer } from "./Email/UserManagement/email.config.js";
 
 
 dotenv.config();
@@ -76,4 +77,7 @@ app.use("/api/payments", paymentRoutes);
 import Order from "./routes/orderManagement/orderRoutes.js";
 app.use("/order", Order);
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, async () => {
+  console.log(`Server running on port ${PORT}`);
+  await verifyMailer();
+});

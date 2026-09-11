@@ -7,6 +7,7 @@ import {
   X,
   MessageSquare,
 } from "lucide-react";
+import api from "../../lib/axios";
 
 export default function AdminFeedback() {
   const [feedbacks, setFeedbacks] = useState([]);
@@ -28,9 +29,11 @@ export default function AdminFeedback() {
 
   // ✅ Fetch feedbacks
   useEffect(() => {
-    fetch("http://localhost:8070/feedback/all")
-      .then((res) => res.json())
-      .then((data) => setFeedbacks(data))
+    // Uses the shared axios instance so the admin's auth cookie is sent -
+    // reviewer emails are only returned to admins.
+    api
+      .get("/feedback/all")
+      .then((res) => setFeedbacks(Array.isArray(res.data) ? res.data : []))
       .catch((err) => console.error("Fetch error:", err))
       .finally(() => setLoading(false));
   }, []);
@@ -104,16 +107,11 @@ export default function AdminFeedback() {
         }
       });
 
-      const url = editingFeedback
-        ? `http://localhost:8070/feedback/update/${editingFeedback._id}`
-        : "http://localhost:8070/feedback/add";
-      const method = editingFeedback ? "PUT" : "POST";
+      const res = editingFeedback
+        ? await api.put(`/feedback/update/${editingFeedback._id}`, form)
+        : await api.post("/feedback/add", form);
 
-      const res = await fetch(url, { method, body: form });
-      const result = await res.json();
-
-      if (!res.ok) throw new Error(result.message || "Failed to save");
-
+      const result = res.data;
       const savedFeedback = result.feedback || result;
 
       if (editingFeedback) {
@@ -137,7 +135,7 @@ export default function AdminFeedback() {
       });
     } catch (err) {
       console.error(err);
-      alert("Error saving feedback: " + err.message);
+      alert("Error saving feedback: " + (err?.response?.data?.message || err.message));
     }
   };
 
@@ -145,15 +143,11 @@ export default function AdminFeedback() {
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this feedback?")) return;
     try {
-      const res = await fetch(
-        `http://localhost:8070/feedback/delete/${id}`,
-        { method: "DELETE" }
-      );
-      if (!res.ok) throw new Error("Failed to delete");
+      await api.delete(`/feedback/delete/${id}`);
       setFeedbacks((prev) => prev.filter((f) => f._id !== id));
     } catch (err) {
       console.error(err);
-      alert("Error deleting: " + err.message);
+      alert("Error deleting: " + (err?.response?.data?.message || err.message));
     }
   };
 
