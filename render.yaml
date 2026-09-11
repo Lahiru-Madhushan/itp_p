@@ -1,0 +1,76 @@
+# Render Blueprint for the Yong SMART API.
+#
+# Using this instead of filling the dashboard form by hand avoids the common
+# mistake of typing "Docker" into the Build Command box - Docker is a runtime,
+# not a command. With a blueprint, Render reads the runtime from here.
+#
+# Deploy: Render dashboard -> New -> Blueprint -> pick this repo.
+# Values marked `sync: false` are secrets: Render prompts for them and never
+# stores them in the repository.
+
+services:
+  - type: web
+    name: yongsmart-api
+    runtime: docker
+    plan: free
+    region: singapore # closest free region to Sri Lanka
+    branch: main
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+      # Render injects PORT itself - server.js already reads it.
+
+      # --- Database ---
+      - key: MONGODB_URL
+        sync: false
+
+      # --- Auth ---
+      - key: JWT_SECRET
+        sync: false
+
+      # --- URLs ---
+      # Set CLIENT_URL to the Vercel domain once the frontend is deployed.
+      # CORS and the password-reset email link both read it.
+      - key: CLIENT_URL
+        sync: false
+      - key: SERVER_URL
+        sync: false
+      # Optional: comma-separated extra origins for Vercel preview builds.
+      - key: EXTRA_ORIGINS
+        sync: false
+
+      # --- Mail (Gmail app password, not the account password) ---
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+      - key: MAIL_FROM_NAME
+        value: Yong SMART
+
+      # --- Image hosting ---
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+
+      # --- Chatbot ---
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-3.6-flash
+
+      # STRIPE_SECRET_KEY / STRIPE_WEBHOOK_SECRET are deliberately omitted.
+      # Payment endpoints return 503 when unset; the rest of the app runs.

@@ -66,6 +66,17 @@ mongoose
   .then(() => console.log("MongoDB connection successful"))
   .catch((err) => console.error("MongoDB connection error:", err));
 
+// Health check for the host's uptime probe. There is no route at "/", so
+// without this a probe pointed at the root would report the service as down.
+app.get("/health", (req, res) => {
+  const states = ["disconnected", "connected", "connecting", "disconnecting"];
+  res.json({
+    status: "ok",
+    db: states[mongoose.connection.readyState] ?? "unknown",
+    uptime: Math.round(process.uptime()),
+  });
+});
+
 // routes
 import userRoutes from "./routes/UserManagement/User.js";
 app.use("/user", userRoutes);
