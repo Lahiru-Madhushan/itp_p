@@ -199,7 +199,14 @@ export const deleteUser = async (req, res) => {
 
 export const logout = async (req, res) => {
 
-  res.clearCookie("token");
+  // Attributes must match those the cookie was set with, or the browser
+  // keeps it and the user stays logged in.
+  const isProd = process.env.NODE_ENV === "production";
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? "none" : "strict",
+  });
 	res.status(200).json({ success: true, message: "Logged out successfully" });
   
 };

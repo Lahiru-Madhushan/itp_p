@@ -3,6 +3,10 @@ import React, { useEffect, useState } from "react";
 import { Search, Download, Trash2, Mail, X } from "lucide-react";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
+import { API_ROOT } from "../../lib/api";
+
+// ✅ Base URL
+const API_BASE = `${API_ROOT}/supplier`;
 
 const SupplierEmail = () => {
   const [orders, setOrders] = useState([]);
@@ -18,9 +22,6 @@ const SupplierEmail = () => {
     unit: "",
     quantity: "",
   });
-
-  // ✅ Base URL
-  const API_BASE = "http://localhost:8070/supplier";
 
   // ✅ Fetch all orders
   useEffect(() => {

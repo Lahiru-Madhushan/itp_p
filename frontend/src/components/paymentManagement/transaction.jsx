@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from '../../lib/axios';
 import Pay from '../paymentManagement/pay';
 import TransactionHistory from '../paymentManagement/transaction';
+import { API_ROOT } from "../../lib/api";
 
 const TransactionHistoryPage = () => {
   const [transactions, setTransactions] = useState([]);
@@ -14,7 +15,7 @@ const TransactionHistoryPage = () => {
 
   const fetchTransactions = async () => {
     try {
-      const res = await axios.get('http://localhost:8070/api/transactions');
+      const res = await axios.get(`${API_ROOT}/api/transactions`);
       setTransactions(res.data);
     } catch (err) {
       console.error('Error fetching transactions:', err);
@@ -24,7 +25,7 @@ const TransactionHistoryPage = () => {
   const handleCreate = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:8070/api/transactions', form);
+      await axios.post(`${API_ROOT}/api/transactions`, form);
       setForm({ amount: '', type: '', date: '', status: '' });
       fetchTransactions();
     } catch (err) {
@@ -34,7 +35,7 @@ const TransactionHistoryPage = () => {
 
   const handleUpdate = async (id) => {
     try {
-      await axios.put(`http://localhost:8070/api/transactions/${id}`, form);
+      await axios.put(`${API_ROOT}/api/transactions/${id}`, form);
       setEditingId(null);
       setForm({ amount: '', type: '', date: '', status: '' });
       fetchTransactions();
@@ -45,7 +46,7 @@ const TransactionHistoryPage = () => {
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`http://localhost:8070/api/transactions/${id}`);
+      await axios.delete(`${API_ROOT}/api/transactions/${id}`);
       fetchTransactions();
     } catch (err) {
       console.error('Error deleting transaction:', err);

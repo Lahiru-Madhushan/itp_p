@@ -4,8 +4,9 @@ import { Link, useNavigate } from "react-router-dom";
 import { Trash2, ShoppingBag } from "lucide-react";
 import axios from "axios";
 import { useAuthStore } from "../../store/user"; // Adjust path to your store
+import { API_ROOT } from "../../lib/api";
 
-const API = import.meta.env.VITE_API_BASE_URL || "http://localhost:8070";
+const API = API_ROOT;
 
 const CartDropdown = ({ cart, onRemove }) => {
   const navigate = useNavigate();

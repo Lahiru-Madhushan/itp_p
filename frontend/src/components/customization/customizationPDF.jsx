@@ -1,4 +1,5 @@
 import jsPDF from "jspdf";
+import { API_ROOT } from "../../lib/api";
 
 /**
  * Utility: Convert image URL → Base64 using fetch + FileReader
@@ -86,9 +87,9 @@ export const generateCustomizationPDF = async (order) => {
   // ---------- Uploaded Design Image ----------
   if (order.designImage) {
     try {
-      const imageUrl = `http://localhost:8070/uploads/abc123.png`;
+      const imageUrl = `${API_ROOT}/uploads/abc123.png`;
 
-      /*const imageUrl = `http://localhost:8070/uploads/customizations/${order.designImage}`;*/
+      /*const imageUrl = `${API_ROOT}/uploads/customizations/${order.designImage}`;*/
       const base64Img = await getBase64Image(imageUrl);
 
       if (y > pageHeight - 80) {

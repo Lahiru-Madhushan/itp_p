@@ -3,8 +3,9 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Search, Trash2, Download } from "lucide-react";
 import { generateOrderPDF } from "./orderPDF";
+import { API_ROOT } from "../../lib/api";
 
-const API = import.meta.env.VITE_API_BASE_URL || "http://localhost:8070";
+const API = API_ROOT;
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState([]);

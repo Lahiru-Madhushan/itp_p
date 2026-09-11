@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Plus, Trash2, Save, Edit, X, Search, Package, Settings } from "lucide-react";
+import { API_ROOT } from "../../lib/api";
 
-const API = import.meta.env.VITE_API_BASE_URL || "http://localhost:8070";
+const API = API_ROOT;
 
 export default function AdminCustomizationPage() {
   const [products, setProducts] = useState([]);

@@ -5,6 +5,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { useNavigate } from 'react-router-dom';
 import axios from '../../lib/axios';
+import { API_ROOT } from "../../lib/api";
 
 const cardIcons = [
   { src: 'https://upload.wikimedia.org/wikipedia/commons/4/41/Visa_Logo.png', alt: 'Visa' },
@@ -37,7 +38,7 @@ const PayForm = ({ totalAmount, cart, navigate }) => {
       return;
     }
     try {
-      const response = await axios.post('http://localhost:8070/payment/pay', {
+      const response = await axios.post(`${API_ROOT}/payment/pay`, {
         amount: totalAmount,
         cart,
         paymentMethodId: paymentMethod.id,

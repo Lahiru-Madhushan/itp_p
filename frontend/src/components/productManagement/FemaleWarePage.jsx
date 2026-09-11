@@ -16,8 +16,9 @@ import {
   Check,
 } from "lucide-react";
 import Footer from "../Footer";
+import { API_ROOT } from "../../lib/api";
 
-const API = import.meta.env.VITE_API_BASE_URL || "http://localhost:8070";
+const API = API_ROOT;
 
 export default function FemaleWarePage() {
   const [products, setProducts] = useState([]);

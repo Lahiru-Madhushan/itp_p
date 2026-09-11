@@ -4,6 +4,7 @@ import { Link, useLocation } from "react-router-dom";
 import { ShoppingCart, User, Menu, X, Zap, Shield, Truck } from "lucide-react";
 import { useAuthStore } from "../store/user";
 import CartDropdown from "./productManagement/CartDropdown";
+import { API_ROOT } from "../lib/api";
 
 const NavigationBar = () => {
   const { isAuthenticated, user, logout } = useAuthStore();
@@ -79,7 +80,7 @@ const NavigationBar = () => {
   // Remove item from cart
   const handleRemoveItem = async (id, qty = 1) => {
     try {
-      await fetch("http://localhost:8070/product/removeFromCart", {
+      await fetch(`${API_ROOT}/product/removeFromCart`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ productId: id, quantity: qty }),

@@ -21,6 +21,7 @@ import {
 import axios from "axios";
 import { useAuthStore } from "../../store/user";
 import { useNavigate } from "react-router-dom";
+import { API_ROOT } from "../../lib/api";
 
 const UserProfile = () => {
   const { user, isAuthenticated } = useAuthStore();
@@ -59,7 +60,7 @@ const UserProfile = () => {
 
       // Fetch user data
       const userRes = await axios.get(
-        `http://localhost:8070/user/SelectUser/${user._id}`,
+        `${API_ROOT}/user/SelectUser/${user._id}`,
         { withCredentials: true }
       );
 
@@ -94,7 +95,7 @@ const UserProfile = () => {
     try {
       setRegularOrdersLoading(true);
       const ordersRes = await axios.get(
-        `http://localhost:8070/api/payments/user-orders/${user._id}`,
+        `${API_ROOT}/api/payments/user-orders/${user._id}`,
         { withCredentials: true }
       );
       
@@ -108,7 +109,7 @@ const UserProfile = () => {
       // If endpoint doesn't exist, try the order endpoint directly
       try {
         const allOrdersRes = await axios.get(
-          `http://localhost:8070/order/all`,
+          `${API_ROOT}/order/all`,
           { withCredentials: true }
         );
         
@@ -223,7 +224,7 @@ const UserProfile = () => {
     setLoading(true);
     try {
       await axios.put(
-        `http://localhost:8070/user/updateUser/${user._id}`,
+        `${API_ROOT}/user/updateUser/${user._id}`,
         {
           firstName: formData.firstName,
           lastName: formData.lastName,
@@ -614,7 +615,7 @@ const UserProfile = () => {
                           <div key={index} className="flex items-center space-x-3 bg-gray-50 p-3 rounded-lg">
                             {item.images?.[0] && (
                               <img
-                                src={`http://localhost:8070${item.images[0]}`}
+                                src={`${API_ROOT}${item.images[0]}`}
                                 alt={item.name}
                                 className="w-12 h-12 object-cover rounded"
                               />

@@ -19,8 +19,9 @@ import {
 import api from "../../lib/axios";
 import { useAuthStore } from "../../store/user";
 import Footer from "../Footer";
+import { API_ROOT } from "../../lib/api";
 
-const SERVER = "http://localhost:8070";
+const SERVER = `${API_ROOT}`;
 
 const CATEGORIES = ["Product", "Service", "Delivery", "Website", "Other"];
 

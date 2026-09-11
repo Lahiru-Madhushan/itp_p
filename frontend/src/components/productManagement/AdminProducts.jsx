@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { Search, Trash2, Edit, Plus, X, Package, Download } from "lucide-react";
 import { generateProductsPDF } from "./productPDF"; // <-- Import PDF generator
+import { API_ROOT } from "../../lib/api";
 
 export default function AdminProducts() {
   const [products, setProducts] = useState([]);
@@ -23,7 +24,7 @@ export default function AdminProducts() {
 
   // ✅ Fetch products
   useEffect(() => {
-    fetch("http://localhost:8070/product/allProducts")
+    fetch(`${API_ROOT}/product/allProducts`)
       .then((res) => res.json())
       .then((data) => setProducts(data))
       .catch((err) => console.error("Fetch error:", err))
@@ -98,8 +99,8 @@ export default function AdminProducts() {
       });
 
       const url = editingProduct
-        ? `http://localhost:8070/product/updateProduct/${editingProduct._id}`
-        : "http://localhost:8070/product/addProduct";
+        ? `${API_ROOT}/product/updateProduct/${editingProduct._id}`
+        : `${API_ROOT}/product/addProduct`;
       const method = editingProduct ? "PUT" : "POST";
 
       const res = await fetch(url, { method, body: form });
@@ -139,7 +140,7 @@ export default function AdminProducts() {
     if (!window.confirm("Delete product?")) return;
     try {
       const res = await fetch(
-        `http://localhost:8070/product/deleteProduct/${id}`,
+        `${API_ROOT}/product/deleteProduct/${id}`,
         { method: "DELETE" }
       );
       if (!res.ok) throw new Error("Failed to delete product");
@@ -283,7 +284,7 @@ export default function AdminProducts() {
                           p.images.map((img, idx) => (
                             <img
                               key={idx}
-                              src={`http://localhost:8070${img}`}
+                              src={`${API_ROOT}${img}`}
                               alt="product"
                               className="h-12 w-12 object-cover rounded border"
                             />

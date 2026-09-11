@@ -1,0 +1,13 @@
+# Pinned for model.pickle compatibility.
+#
+# The pickle references numpy._core, which only exists in numpy 2.x -
+# installing numpy 1.x makes the model fail to unpickle at runtime.
+# scikit-learn is required even though helper.py never imports it: the
+# pickle deserialises a sklearn.linear_model._logistic estimator. It is
+# pinned to the exact version the model was trained with (1.6.1) - newer
+# versions load it but warn InconsistentVersionWarning and may score
+# differently, which is not something to discover in production.
+numpy>=2.0,<3
+scikit-learn==1.6.1
+pandas>=2.2,<3
+nltk>=3.9,<4

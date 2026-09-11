@@ -7,6 +7,7 @@ import {
   Filter,
 } from "lucide-react";
 import { generateUsersPDF } from "./userPDF";
+import { API_ROOT } from "../../lib/api";
 
 const Users = () => {
   const [users, setUsers] = useState([]);
@@ -19,7 +20,7 @@ const Users = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await fetch("http://localhost:8070/user/AllUser", {
+        const res = await fetch(`${API_ROOT}/user/AllUser`, {
           credentials: "include",
         });
         const data = await res.json();
@@ -69,7 +70,7 @@ const Users = () => {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this user?")) return;
     try {
-      await fetch(`http://localhost:8070/user/deleteUser/${id}`, {
+      await fetch(`${API_ROOT}/user/deleteUser/${id}`, {
         method: "DELETE",
         credentials: "include",
       });
@@ -81,7 +82,7 @@ const Users = () => {
 
   const handleRoleChange = async (id, newRole) => {
     try {
-      const res = await fetch(`http://localhost:8070/user/updateUser/${id}`, {
+      const res = await fetch(`${API_ROOT}/user/updateUser/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

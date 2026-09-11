@@ -4,9 +4,10 @@ import {
   PieChart, Pie, Tooltip, Legend, Cell, ResponsiveContainer
 } from "recharts";
 import { TrendingUp, Sparkles, Loader } from "lucide-react";
+import { API_ROOT } from "../lib/api";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8070",
+  baseURL: API_ROOT,
 });
 
 const COLORS = ["#10b981", "#ef4444", "#6b7280"];

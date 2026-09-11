@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import { X, Lock, CheckCircle } from "lucide-react";
 import toast from "react-hot-toast";
+import { API_ROOT } from "../../lib/api";
 
 const ResetPassword = () => {
   const [password, setPassword] = useState("");
@@ -40,7 +41,7 @@ const ResetPassword = () => {
     setIsSubmitting(true);
     try {
       const response = await axios.post(
-        `http://localhost:8070/user/reset-password/${token}`,
+        `${API_ROOT}/user/reset-password/${token}`,
         { password },
         { withCredentials: true }
       );

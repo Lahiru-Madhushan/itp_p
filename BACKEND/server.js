@@ -20,8 +20,28 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 
+// Allowed browser origins. CLIENT_URL is the deployed SPA; the localhost
+// entries keep dev working. Set EXTRA_ORIGINS (comma-separated) to allow
+// Vercel preview deployments, which get a new subdomain per commit.
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  ...(process.env.EXTRA_ORIGINS?.split(",") ?? []),
+  "http://localhost:3000",
+  "http://localhost:5173",
+]
+  .filter(Boolean)
+  .map((o) => o.trim().replace(/\/$/, ""));
+
 app.use(cors({
-  origin: process.env.CLIENT_URL, // http://localhost:3000
+  origin(origin, callback) {
+    // No Origin header: same-origin, curl, or a server-to-server call.
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin.replace(/\/$/, ""))) {
+      return callback(null, true);
+    }
+    console.warn(`[cors] blocked origin: ${origin}`);
+    return callback(new Error(`Origin ${origin} is not allowed by CORS`));
+  },
   credentials: true
 }));
 
